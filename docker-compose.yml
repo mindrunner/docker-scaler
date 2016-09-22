@@ -1,0 +1,14 @@
+version: "2"
+
+services:
+
+  scaler:
+    # Avoid creating special network interface
+    network_mode: bridge
+    image: schweizerischebundesbahnen/scaler:latest
+    volumes:
+      # Docker socket for controlling other containers
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      # Config directory
+      - "./config:/opt/docker-autoscale/config"
+    restart: always
