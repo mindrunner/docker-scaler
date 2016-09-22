@@ -1,0 +1,16 @@
+{
+  "scaleInterval": 10,
+  "containers": [
+    {
+      "image": "nginx:latest",
+      "instances": 5,
+      "volumes": ["/tmp/:/var/www/"]
+    },
+    {
+      "image": "httpd:latest",
+      "instances": 10,
+      "volumes": ["/tmp/:/var/www/"]
+    }
+  ],
+  "logLevel": "info"
+}
