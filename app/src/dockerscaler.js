@@ -22,7 +22,14 @@ class DockerScaler {
             maxPort: 50000
         };
 
+        this.defaultContainerConfig = {
+            image: null,
+            instances: 0,
+            volumes: []
+        };
+
         this.config = Object.assign(this.defaultConfig, config);
+        this.runningPulls = [];
         logger.level = this.config.logLevel;
         cleanup.Cleanup(this.cleanup);
         this.init();
@@ -33,9 +40,7 @@ class DockerScaler {
 
         // Spawning the first time;
         for (var i in this.config.containers) {
-            this.pullContainer(this.config.containers[i], function (container) {
-                _this.spawnContainer(container);
-            });
+            _this.spawnContainer(this.config.containers[i]);
         }
 
         if (this.config.maxAge > 0) {
@@ -49,29 +54,59 @@ class DockerScaler {
         }
     }
 
-    pullContainer(container, callback) {
+    runContainer(container) {
         var _this = this;
 
-        logger.debug('Pulling ' + container.image);
-        docker.pull(container.image, function (err, stream) {
-            if (err) {
-                logger.error('Error pulling ' + container.image + ': ' + err);
+        var containerConfig = {
+            Image: container.image,
+            Name: 'container-' + this.generateId(8),
+            Labels: {'auto-deployed': 'true'},
+            Binds: container.volumes
+        };
+
+        docker.createContainer(containerConfig, function(err, createdContainer) {
+            if(err) {
+                logger.error("Error creating instance of %s: %s", containerConfig.Image, err);
+                if(err.statusCode == 404) {
+                    if(!_this.runningPulls.includes(container.image)) {
+                        _this.runningPulls.push(container.image);
+                        docker.pull(container.image, function (err, stream) {
+                            docker.modem.followProgress(stream, onFinished, onProgress);
+
+                            function onFinished(err, output) {
+                                if(err) {
+                                    logger.error("Error pulling %s: %s", container.image, err);
+                                    return;
+                                }
+                                _this.runningPulls.splice(_this.runningPulls.indexOf(container.image),1);
+                            }
+
+                            function onProgress(event) {
+                                if(event.progressDetail != undefined) {
+                                    logger.debug('%s: %s (%d/%d)',event.id, event.status, event.progressDetail.current, event.progressDetail.total);
+                                } else {
+                                    logger.debug('%s: %s',event.id, event.status);
+                                }
+                            }
+                        })
+                    }
+                }
+                return;
             }
 
-            docker.modem.followProgress(stream, function (err) {
-                if (err) {
-                    logger.error('Error pulling ' + container.image + ': ' + err);
-                }
-
-                if (callback) {
-                    callback(container);
+            createdContainer.start(function (err, data) {
+                if(err) {
+                    logger.error("Error starting instance of %s: %s", containerConfig.Image, err);
+                    return;
                 }
             });
-        });
+        })
     }
 
     spawnContainer(container, onFinish) {
         var _this = this;
+
+        container = Object.assign(this.defaultContainerConfig, container);
 
         this.getContainersByImage(container.image, function (runningContainers) {
             logger.debug('Found %j %s containers.', runningContainers.length, container.image);
@@ -80,17 +115,16 @@ class DockerScaler {
 
                 for (var i = 0; i < neededContainers; i++) {
                     logger.debug("Scaling up %s.", container.image);
-                    var volumes = container.volumes || [];
-                    docker.run(container.image, null, null, {
-                        labels: {'auto-deployed': 'true'},
-                        binds: volumes,
-                        name: 'container-' + _this.generateId(8)
-                    }, null, function (err, data, newContainer) {
+
+                    _this.runContainer(container);
+
+                    /*docker.run(container.image, null, null, containerConfig, null, function (err, data, newContainer) {
                         if (err) {
                             logger.error("Error starting instance of %s: %s", container.image, err);
+                        } else {
+                            logger.info("Started container %s (%s)", newContainer.id, container.image);
                         }
-                        logger.info("Started container %s (%s)", newContainer.id, container.image);
-                    });
+                    });*/
                 }
             } else if (runningContainers.length > container.instances) {
                 var overContainers = runningContainers.length - container.instances;

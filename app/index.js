@@ -8,6 +8,6 @@ if (!fs.existsSync('./config/config.json')) {
   throw new Error("config/config.json does not exist.");
 }
 
-var config = require('./config/config.json');
+var config = require(process.env.CONFIG || './config/config.json');
 
 new dockerScaler.DockerScaler(config);
