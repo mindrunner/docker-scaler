@@ -23,6 +23,8 @@ You can also run scaler manually like this: `docker run --rm -v /var/run/docker.
 
 ## Configuration
 
+The configuration has to be made in JSON and needs to be mounted to _/opt/docker-autoscale/config_ as _config.json_.
+
 ```javascript
 {
   "scaleInterval": 15, // Interval in seconds to check container scaling.
