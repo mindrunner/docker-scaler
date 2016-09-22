@@ -2,8 +2,11 @@ FROM alpine:3.4
 MAINTAINER Simon Erhardt <simon.erhardt@sbb.ch>
 
 RUN apk add --update \
+  tini \
   nodejs-lts \
   && rm -rf /var/cache/apk/*
+
+ENTRYPOINT ["/sbin/tini", "--"]
 
 COPY app /opt/docker-autoscale
 RUN cd /opt/docker-autoscale && npm install
