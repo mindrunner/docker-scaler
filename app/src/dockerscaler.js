@@ -30,6 +30,7 @@ class DockerScaler {
 
         this.config = Object.assign(this.defaultConfig, config);
         this.runningPulls = [];
+
         logger.level = this.config.logLevel;
         cleanup.Cleanup(this.cleanup);
         this.init();
@@ -68,7 +69,7 @@ class DockerScaler {
             if(err) {
                 logger.error("Error creating instance of %s: %s", containerConfig.Image, err);
                 if(err.statusCode == 404) {
-                    if(!_this.runningPulls.includes(container.image)) {
+                    if(_this.runningPulls.indexOf(container.image) == -1) {
                         _this.runningPulls.push(container.image);
                         docker.pull(container.image, function (err, stream) {
                             docker.modem.followProgress(stream, onFinished, onProgress);
