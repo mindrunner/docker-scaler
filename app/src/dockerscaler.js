@@ -1,8 +1,15 @@
 'use strict';
 
-const crypto = require('crypto'),
+const fs = require('fs'),
+    crypto = require('crypto'),
+    portscanner = require('portscanner'),
+    async = require('asyncawait/async'),
+    await = require('asyncawait/await'),
+    network = require('network'),
+
     cleanup = require('./cleanup'),
     helper = require('./helper'),
+
     logger = helper.Logger.getInstance(),
     docker = helper.Docker.getInstance();
 
@@ -25,7 +32,8 @@ class DockerScaler {
         this.defaultContainerConfig = {
             image: null,
             instances: 0,
-            volumes: []
+            volumes: [],
+            env: []
         };
 
         this.config = Object.assign(this.defaultConfig, config);
@@ -37,11 +45,11 @@ class DockerScaler {
     }
 
     init() {
-        var _this = this;
+        var self = this;
 
         // Spawning the first time;
         for (var i in this.config.containers) {
-            _this.spawnContainer(this.config.containers[i]);
+            this.spawnContainer(this.config.containers[i]);
         }
 
         if (this.config.maxAge > 0) {
@@ -50,58 +58,94 @@ class DockerScaler {
 
         if (this.config.autoPullInterval > 0) {
             helper.Timer.add(function () {
-                _this.autoPull();
+                self.autoPull();
             }, this.config.autoPullInterval * 1000);
         }
     }
 
     runContainer(container) {
-        var _this = this;
+        var self = this;
 
-        var containerConfig = {
-            Image: container.image,
-            Name: 'container-' + this.generateId(8),
-            Labels: {'auto-deployed': 'true'},
-            Binds: container.volumes
-        };
+        logger.debug('Starting instance of %s.', container.image);
 
-        docker.createContainer(containerConfig, function(err, createdContainer) {
-            if(err) {
-                logger.error("Error creating instance of %s: %s", containerConfig.Image, err);
-                if(err.statusCode == 404) {
-                    if(_this.runningPulls.indexOf(container.image) == -1) {
-                        _this.runningPulls.push(container.image);
-                        docker.pull(container.image, function (err, stream) {
-                            docker.modem.followProgress(stream, onFinished, onProgress);
+        return async(function() {
+            var containerIsAvailable = await(checkIfContainerIsAvailable());
 
-                            function onFinished(err, output) {
-                                if(err) {
-                                    logger.error("Error pulling %s: %s", container.image, err);
-                                    return;
-                                }
-                                _this.runningPulls.splice(_this.runningPulls.indexOf(container.image),1);
-                            }
-
-                            function onProgress(event) {
-                                if(event.progressDetail != undefined) {
-                                    logger.debug('%s: %s (%d/%d)',event.id, event.status, event.progressDetail.current, event.progressDetail.total);
-                                } else {
-                                    logger.debug('%s: %s',event.id, event.status);
-                                }
-                            }
-                        })
-                    }
-                }
-                return;
+            if(!containerIsAvailable) {
+                await(pullContainer());
             }
 
-            createdContainer.start(function (err, data) {
-                if(err) {
-                    logger.error("Error starting instance of %s: %s", containerConfig.Image, err);
-                    return;
-                }
+            var newContainer = await(createContainer());
+
+            newContainer.start(null, function() {
+                logger.info("Container %s was started.", newContainer.id);
             });
-        })
+        })();
+
+        function createContainer() {
+            var containerConfig = {
+                Image: container.image,
+                Hostname: 'container-' + self.generateId(8),
+                Labels: {'auto-deployed': 'true'},
+                Binds: container.volumes,
+                //Env: container.env
+            };
+
+            return new Promise(function(resolve, reject) {
+                docker.createContainer(containerConfig, function(err, newContainer) {
+                    if(err) {
+                        return reject(err);
+                    }
+
+                    resolve(newContainer);
+                });
+            });
+        }
+
+        function checkIfContainerIsAvailable() {
+            return new Promise(function(resolve, reject) {
+                docker.listImages(container.image, function(err, results) {
+                    if(err) {
+                        return reject(err);
+                    }
+
+                    for(var i in results) {
+                        var result = results[i];
+
+                        if(result.RepoTags.indexOf(container.image) != -1) {
+                            resolve(true);
+                        }
+                    }
+
+                    resolve(false);
+                })
+            });
+        }
+
+        function pullContainer() {
+            return new Promise(function(resolve, reject) {
+                docker.pull(container.image, function (err, stream) {
+                    docker.modem.followProgress(stream, onFinished, onProgress);
+
+                    function onFinished(err, output) {
+                        if(err) {
+                            logger.error("Error pulling %s: %s", container.image, err);
+                            return reject(err);
+                        }
+
+                        resolve();
+                    }
+
+                    function onProgress(event) {
+                        if(event.progressDetail != undefined) {
+                            logger.debug('%s: %s (%d/%d)',event.id, event.status, event.progressDetail.current, event.progressDetail.total);
+                        } else {
+                            logger.debug('%s: %s',event.id, event.status);
+                        }
+                    }
+                })
+            });
+        }
     }
 
     spawnContainer(container, onFinish) {
@@ -110,35 +154,45 @@ class DockerScaler {
         container = Object.assign(this.defaultContainerConfig, container);
 
         this.getContainersByImage(container.image, function (runningContainers) {
-            logger.debug('Found %j %s containers.', runningContainers.length, container.image);
-            if (runningContainers.length < container.instances) {
-                var neededContainers = container.instances - runningContainers.length;
 
-                for (var i = 0; i < neededContainers; i++) {
-                    logger.debug("Scaling up %s.", container.image);
+            async(function() {
+                logger.debug('Found %j %s containers.', runningContainers.length, container.image);
+                if (runningContainers.length < container.instances) {
+                    var neededContainers = container.instances - runningContainers.length;
 
-                    _this.runContainer(container);
+                    for (var i = 0; i < neededContainers; i++) {
 
-                    /*docker.run(container.image, null, null, containerConfig, null, function (err, data, newContainer) {
-                        if (err) {
-                            logger.error("Error starting instance of %s: %s", container.image, err);
-                        } else {
-                            logger.info("Started container %s (%s)", newContainer.id, container.image);
-                        }
-                    });*/
+
+                        await(_this.runContainer(container));
+
+                        /*_this.getRandomOpenPort(function (err, port) {
+                            var freshContainer = Object.assign({}, container);
+                            if(err) {
+                                logger.error("%s: Problem finding free port.", freshContainer.image);
+                            }
+                            //console.log(freshContainer);
+                            //freshContainer.env.push({'RANDOM_PORT' : port});
+
+                            //console.log(freshContainer);
+                            //
+
+
+                        });*/
+                    }
+                } else if (runningContainers.length > container.instances) {
+                    var overContainers = runningContainers.length - container.instances;
+
+                    for (var i = 0; i < overContainers; i++) {
+                        logger.debug("Scaling down %s.", container.image);
+
+                        helper.removeContainer(runningContainers.pop().Id);
+                    }
                 }
-            } else if (runningContainers.length > container.instances) {
-                var overContainers = runningContainers.length - container.instances;
 
-                for (var i = 0; i < overContainers; i++) {
-                    logger.debug("Scaling down %s.", container.image);
-                    helper.removeContainer(runningContainers.pop().Id);
-                }
-            }
-
-            helper.Timer.add(function () {
-                _this.spawnContainer(container);
-            }, _this.config.scaleInterval * 1000);
+                helper.Timer.add(function () {
+                    _this.spawnContainer(container);
+                }, _this.config.scaleInterval * 1000);
+            })();
         });
     }
 
@@ -220,8 +274,21 @@ class DockerScaler {
         return crypto.randomBytes(len).toString('hex').substr(len);
     }
 
-    getRandomOpenPort(port) {
+    getRandomOpenPort(callback) {
+        var _this = this,
+            host = "127.0.0.1";
 
+        if(fs.existsSync('/.dockerenv')) {
+            network.get_gateway_ip(function(err, ip) {
+                if(err) {
+                    throw new Error("Couldn't get gateway ip: " + err);
+                }
+
+                portscanner.findAPortNotInUse(_this.config.minPort, _this.config.maxPort, host, callback);
+            })
+        } else {
+            portscanner.findAPortNotInUse(_this.config.minPort, _this.config.maxPort, host, callback);
+        }
     }
 }
 

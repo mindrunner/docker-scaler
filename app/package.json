@@ -9,7 +9,9 @@
   "author": "Simon Erhardt <simon.erhardt@sbb.ch>",
   "license": "ISC",
   "dependencies": {
+    "asyncawait": "^1.0.6",
     "dockerode": "~2.2",
+    "network": "^0.2.1",
     "portscanner": "^1.0.0",
     "winston": "~2.2"
   }
