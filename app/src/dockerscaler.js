@@ -37,7 +37,6 @@ class DockerScaler {
         };
 
         this.config = Object.assign(this.defaultConfig, config);
-        this.runningPulls = [];
 
         logger.level = this.config.logLevel;
         cleanup.Cleanup(this.cleanup);
@@ -77,9 +76,7 @@ class DockerScaler {
 
             var newContainer = await(createContainer());
 
-            newContainer.start(null, function() {
-                logger.info("Container %s was started.", newContainer.id);
-            });
+            await(startContainer(newContainer));
         })();
 
         function createContainer() {
@@ -98,6 +95,18 @@ class DockerScaler {
                     }
 
                     resolve(newContainer);
+                });
+            });
+        }
+
+        function startContainer(container) {
+            return new Promise(function(resolve, reject) {
+                container.start(null, function(err) {
+                    if(err) {
+                        return reject(err);
+                    }
+                    logger.info("Container %s was started.", container.id);
+                    resolve();
                 });
             });
         }
@@ -132,15 +141,20 @@ class DockerScaler {
                             logger.error("Error pulling %s: %s", container.image, err);
                             return reject(err);
                         }
-
+                        logger.info("Successfully pulled %s.",container.image);
                         resolve();
                     }
 
                     function onProgress(event) {
-                        if(event.progressDetail != undefined) {
-                            logger.debug('%s: %s (%d/%d)',event.id, event.status, event.progressDetail.current, event.progressDetail.total);
-                        } else {
+                        if(event.progressDetail != undefined
+                            && event.progressDetail.current != undefined
+                            && event.progressDetail.total != undefined) {
+                            var percent = Math.round(100 / event.progressDetail.total * event.progressDetail.current);
+                            logger.debug('%s: %s (%d%)', event.id, event.status, percent);
+                        } else if(event.id != undefined) {
                             logger.debug('%s: %s',event.id, event.status);
+                        } else {
+                            logger.debug('%s', event.status);
                         }
                     }
                 })
@@ -148,8 +162,8 @@ class DockerScaler {
         }
     }
 
-    spawnContainer(container, onFinish) {
-        var _this = this;
+    spawnContainer(container) {
+        var self = this;
 
         container = Object.assign(this.defaultContainerConfig, container);
 
@@ -161,23 +175,7 @@ class DockerScaler {
                     var neededContainers = container.instances - runningContainers.length;
 
                     for (var i = 0; i < neededContainers; i++) {
-
-
-                        await(_this.runContainer(container));
-
-                        /*_this.getRandomOpenPort(function (err, port) {
-                            var freshContainer = Object.assign({}, container);
-                            if(err) {
-                                logger.error("%s: Problem finding free port.", freshContainer.image);
-                            }
-                            //console.log(freshContainer);
-                            //freshContainer.env.push({'RANDOM_PORT' : port});
-
-                            //console.log(freshContainer);
-                            //
-
-
-                        });*/
+                        await(self.runContainer(container));
                     }
                 } else if (runningContainers.length > container.instances) {
                     var overContainers = runningContainers.length - container.instances;
@@ -190,14 +188,14 @@ class DockerScaler {
                 }
 
                 helper.Timer.add(function () {
-                    _this.spawnContainer(container);
-                }, _this.config.scaleInterval * 1000);
+                    self.spawnContainer(container);
+                }, self.config.scaleInterval * 1000);
             })();
         });
     }
 
     watchContainerAge() {
-        var _this = this;
+        var self = this;
 
         // Only search for auto-deployed containers
         var listOpts = {
@@ -213,37 +211,37 @@ class DockerScaler {
                 var container = containers[i];
                 var containerAge = time - container.Created;
 
-                if (containerAge > _this.config.maxAge) {
+                if (containerAge > self.config.maxAge) {
                     logger.info("Container %s is to old (%j seconds). Removing...", container.Names[0], containerAge);
                     helper.removeContainer(container.Id);
                     containersKilled++;
                 }
 
-                if(_this.config.slowKill > 0 && containersKilled >= _this.config.slowKill) {
-                    logger.debug("Slow kill limit reached, sleeping %j seconds.", _this.config.slowKillWait);
+                if(self.config.slowKill > 0 && containersKilled >= self.config.slowKill) {
+                    logger.debug("Slow kill limit reached, sleeping %j seconds.", self.config.slowKillWait);
 
                     helper.Timer.add(function () {
-                        _this.watchContainerAge();
-                    }, _this.config.slowKillWait * 1000);
+                        self.watchContainerAge();
+                    }, self.config.slowKillWait * 1000);
                     return; // stop processing
                 }
             }
 
             helper.Timer.add(function () {
-                _this.watchContainerAge();
-            }, _this.config.ageCheckInterval * 1000);
+                self.watchContainerAge();
+            }, self.config.ageCheckInterval * 1000);
         });
     }
 
     autoPull() {
-        var _this = this;
+        var self = this;
 
         for (var i in this.config.containers) {
             this.pullContainer(this.config.containers[i], null);
         }
 
         helper.Timer.add(function () {
-            _this.autoPull();
+            self.autoPull();
         }, this.config.autoPullInterval * 1000)
     }
 
@@ -275,7 +273,7 @@ class DockerScaler {
     }
 
     getRandomOpenPort(callback) {
-        var _this = this,
+        var self = this,
             host = "127.0.0.1";
 
         if(fs.existsSync('/.dockerenv')) {
@@ -284,10 +282,10 @@ class DockerScaler {
                     throw new Error("Couldn't get gateway ip: " + err);
                 }
 
-                portscanner.findAPortNotInUse(_this.config.minPort, _this.config.maxPort, host, callback);
+                portscanner.findAPortNotInUse(self.config.minPort, self.config.maxPort, host, callback);
             })
         } else {
-            portscanner.findAPortNotInUse(_this.config.minPort, _this.config.maxPort, host, callback);
+            portscanner.findAPortNotInUse(self.config.minPort, self.config.maxPort, host, callback);
         }
     }
 }
