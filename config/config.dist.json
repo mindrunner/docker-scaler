@@ -9,7 +9,12 @@
     {
       "image": "httpd:latest",
       "instances": 10,
-      "volumes": ["/tmp/:/var/www/"]
+      "volumes": [
+        "/tmp/:/var/www/"
+      ],
+      "env": [
+        "Test=Test"
+      ],
     }
   ],
   "logLevel": "info"
