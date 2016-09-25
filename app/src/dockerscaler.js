@@ -35,12 +35,13 @@ class DockerScaler {
             env: [],
             ports: []
         };
-
         this.config = Object.assign(this.defaultConfig, config);
+        this.hooks = {
+          beforeCreate : []
+        }
 
         logger.level = this.config.logLevel;
         cleanup.Cleanup(this.cleanup);
-        this.init();
     }
 
     init() {
@@ -86,8 +87,9 @@ class DockerScaler {
         });
     }
 
-    runContainer(container) {
+    runContainer(originalContainer) {
         var self = this;
+        var container = JSON.parse(JSON.stringify(originalContainer)); // copy the variable
 
         logger.info('Starting instance of %s.', container.image);
 
@@ -138,10 +140,12 @@ class DockerScaler {
                 Labels: {'auto-deployed': 'true'},
                 Binds: container.volumes,
                 Env: container.env,
-                PortBindings: container.ports
+                PortBindings: {}
             };
 
             return new Promise(function(resolve, reject) {
+                self.runHook('beforeCreate', container, containerConfig);
+                
                 docker.createContainer(containerConfig, function(err, newContainer) {
                     if(err) {
                         return reject(err);
@@ -225,6 +229,18 @@ class DockerScaler {
 
             onFinish(containerList);
         });
+    }
+
+    loadPlugin(plugin) {
+        plugin(this);
+    }
+
+    runHook(hook) {
+        var args = Array.prototype.slice.call(arguments);
+
+        for(var i in this.hooks[hook]) {
+            this.hooks[hook][i](args, this.config);
+        }
     }
 
     generateId(len) {
