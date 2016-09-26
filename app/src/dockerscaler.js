@@ -35,6 +35,7 @@ class DockerScaler {
             env: [],
             ports: []
         };
+
         this.config = Object.assign(this.defaultConfig, config);
         this.plugins = {};
         this.hooks = {
@@ -138,11 +139,12 @@ class DockerScaler {
         function createContainer() {
             var containerConfig = {
                 Image: container.image,
-                name: 'container-' + self.generateId(8),
+                name: container.name || 'container-' + self.generateId(8),
                 Labels: {'auto-deployed': 'true'},
                 Binds: container.volumes,
                 Env: container.env,
-                PortBindings: {}
+                PortBindings: {},
+                Privileged: container.privileged || false
             };
 
             return new Promise(function(resolve, reject) {
