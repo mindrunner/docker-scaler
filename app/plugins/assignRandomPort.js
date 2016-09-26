@@ -6,12 +6,20 @@ const fs = require('fs'),
     network = require('network'),
     portscanner = require('portscanner');
 
-module.exports = async(function (scaler) {
-    console.log("Loading assign random port plugin...");
-
-    scaler.hooks.beforeCreate.push(function(args, config) {
+var assignRandomPortPlugin = async(function (scaler) {
+    scaler.hooks.beforeCreate.push(function(config, args) {
         var container = args[1],
             containerConfig = args[2];
+
+        if(container.randomPort != undefined && container.randomPort) {
+            var randomPort = await(getRandomOpenPort(config.minPort, config.maxPort));
+            containerConfig.PortBindings[randomPort + "/tcp"] = [{
+                HostIp: "0.0.0.0",
+                HostPort: randomPort.toString()
+            }];
+
+            containerConfig.Env.push("RANDOM_PORT=" + randomPort);
+        }
 
         if(container.randomPorts != undefined && Array.isArray(container.randomPorts)) {
             for(var i in container.randomPorts) {
@@ -26,29 +34,33 @@ module.exports = async(function (scaler) {
             }
         }
     });
+
+    function getRandomOpenPort(minPort, maxPort) {
+        return new Promise(function (resolve, reject) {
+            var host = "127.0.0.1";
+
+            if(fs.existsSync('/.dockerenv')) {
+                network.get_gateway_ip(function(err, ip) {
+                    if(err) {
+                        throw new Error("Couldn't get gateway ip: " + err);
+                    }
+                    portscanner.findAPortNotInUse(minPort, maxPort, host, callback);
+                });
+            } else {
+                portscanner.findAPortNotInUse(minPort, maxPort, host, callback);
+            }
+
+            function callback(err, port) {
+                if(err) {
+                    return reject(err);
+                }
+
+                resolve(port);
+            }
+        });
+    }
 });
 
-function getRandomOpenPort(minPort, maxPort) {
-    return new Promise(function (resolve, reject) {
-      var host = "127.0.0.1";
+assignRandomPortPlugin.pluginName = "assignRandomPort";
 
-      if(fs.existsSync('/.dockerenv')) {
-          network.get_gateway_ip(function(err, ip) {
-              if(err) {
-                  throw new Error("Couldn't get gateway ip: " + err);
-              }
-              portscanner.findAPortNotInUse(minPort, maxPort, host, callback);
-          });
-      } else {
-          portscanner.findAPortNotInUse(minPort, maxPort, host, callback);
-      }
-
-      function callback(err, port) {
-          if(err) {
-              return reject(err);
-          }
-
-          resolve(port);
-      }
-    });
-}
+module.exports = assignRandomPortPlugin;

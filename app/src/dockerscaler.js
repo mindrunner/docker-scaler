@@ -36,9 +36,11 @@ class DockerScaler {
             ports: []
         };
         this.config = Object.assign(this.defaultConfig, config);
+        this.plugins = {};
         this.hooks = {
-          beforeCreate : []
-        }
+            beforeCreate : [],
+            beforeCreateLate : []
+        };
 
         logger.level = this.config.logLevel;
         cleanup.Cleanup(this.cleanup);
@@ -136,7 +138,7 @@ class DockerScaler {
         function createContainer() {
             var containerConfig = {
                 Image: container.image,
-                Hostname: 'container-' + self.generateId(8),
+                name: 'container-' + self.generateId(8),
                 Labels: {'auto-deployed': 'true'},
                 Binds: container.volumes,
                 Env: container.env,
@@ -145,7 +147,10 @@ class DockerScaler {
 
             return new Promise(function(resolve, reject) {
                 self.runHook('beforeCreate', container, containerConfig);
-                
+                self.runHook('beforeCreateLate', container, containerConfig);
+
+                console.log(containerConfig);
+
                 docker.createContainer(containerConfig, function(err, newContainer) {
                     if(err) {
                         return reject(err);
@@ -232,35 +237,20 @@ class DockerScaler {
     }
 
     loadPlugin(plugin) {
-        plugin(this);
+        logger.info("Found " + plugin.pluginName + " plugin...");
+        this.plugins[plugin.pluginName] = plugin(this);
     }
 
     runHook(hook) {
         var args = Array.prototype.slice.call(arguments);
 
         for(var i in this.hooks[hook]) {
-            this.hooks[hook][i](args, this.config);
+            this.hooks[hook][i](this.config, args);
         }
     }
 
     generateId(len) {
         return crypto.randomBytes(len).toString('hex').substr(len);
-    }
-
-    getRandomOpenPort(callback) {
-        var self = this,
-            host = "127.0.0.1";
-
-        if(fs.existsSync('/.dockerenv')) {
-            network.get_gateway_ip(function(err, ip) {
-                if(err) {
-                    throw new Error("Couldn't get gateway ip: " + err);
-                }
-                portscanner.findAPortNotInUse(self.config.minPort, self.config.maxPort, host, callback);
-            })
-        } else {
-            portscanner.findAPortNotInUse(self.config.minPort, self.config.maxPort, host, callback);
-        }
     }
 }
 
