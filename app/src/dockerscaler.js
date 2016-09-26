@@ -149,8 +149,6 @@ class DockerScaler {
                 self.runHook('beforeCreate', container, containerConfig);
                 self.runHook('beforeCreateLate', container, containerConfig);
 
-                console.log(containerConfig);
-
                 docker.createContainer(containerConfig, function(err, newContainer) {
                     if(err) {
                         return reject(err);
