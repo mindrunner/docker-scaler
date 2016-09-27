@@ -4,6 +4,7 @@ const async = require('asyncawait/async'),
     await = require('asyncawait/await'),
 
     helper = require('../src/helper'),
+    logger = helper.Logger.getInstance(),
     docker = helper.Docker.getInstance();
 
 var volumesFrom = async(function(scaler) {
@@ -18,6 +19,9 @@ var volumesFrom = async(function(scaler) {
                 fsMode = volumesFrom[1] || "rw";
 
             container = await(scaler.getContainerByName(containerName));
+            if(container.Id == null) {
+                logger.error("Didn't found container %s.", containerName);
+            }
 
             containerConfig.VolumesFrom.push(container.Id + ":" + fsMode);
         }
