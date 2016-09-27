@@ -19,7 +19,7 @@ var volumesFrom = async(function(scaler) {
                 fsMode = volumesFrom[1] || "rw";
 
             container = await(scaler.getContainerByName(containerName));
-            if(container.Id == null) {
+            if(container == null) {
                 logger.error("Didn't found container %s.", containerName);
             }
 
