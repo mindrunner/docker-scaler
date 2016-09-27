@@ -10,6 +10,7 @@ exports.Cleanup = function Cleanup() {
 
         helper.Timer.clearAll();
         var listOpts = {
+            all: true,
             filters: {
                 label: ['auto-deployed']
             }

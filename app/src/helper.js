@@ -82,14 +82,16 @@ exports.removeContainer = function (containerId) {
 
     container.stop(function (err, data) {
         if (err) {
-            logger.error("Error stopping %s.", containerId);
+            logger.warn("Error stopping %s. May it's not running.", containerId);
         } else {
-            container.remove(function (err, data) {
-                if (err) {
-                    logger.error("Error removing %s.", containerId);
-                }
-                logger.info("Removed container %s.", containerId);
-            });
+            logger.info("Stopped container %s.", containerId);
         }
+
+        container.remove(function (err, data) {
+            if (err) {
+                logger.error("Error removing %s.", containerId);
+            }
+            logger.info("Removed container %s.", containerId);
+        });
     });
-}
+};

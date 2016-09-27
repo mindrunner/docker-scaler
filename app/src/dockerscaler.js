@@ -14,6 +14,7 @@ const fs = require('fs'),
     docker = helper.Docker.getInstance();
 
 class DockerScaler {
+
     constructor(config) {
         this.defaultConfig = {
             maxAge: 0, // Max age in seconds after a container should get killed, set 0 to disable
@@ -33,7 +34,8 @@ class DockerScaler {
             instances: 0,
             volumes: [],
             env: [],
-            ports: []
+            ports: [],
+            restart: true
         };
 
         this.config = Object.assign(this.defaultConfig, config);
@@ -50,52 +52,65 @@ class DockerScaler {
     init() {
         var self = this;
 
-        // Spawning the first time;
-        for (var i in this.config.containers) {
-            this.spawnContainer(this.config.containers[i]);
-        }
+        async(function() {
+            // Spawning the first time;
+            for (var i in self.config.containers) {
+                var defaultConfig = JSON.parse(JSON.stringify(self.defaultContainerConfig)), // copy the variables, otherwise they are referenced
+                    container = JSON.parse(JSON.stringify(self.config.containers[i]));
+                container = Object.assign(defaultConfig, container); // merge default config with
 
-        if (this.config.maxAge > 0) {
-            this.watchContainerAge();
-        }
+                await(self.spawnContainer(container));
+            }
+        })();
     }
 
     spawnContainer(container) {
         var self = this;
 
-        container = Object.assign(this.defaultContainerConfig, container);
-
-        this.getContainersByImage(container.image, function (runningContainers) {
-            async(function() {
-                logger.debug('Found %j %s containers.', runningContainers.length, container.image);
-                if (runningContainers.length < container.instances) {
-                    var neededContainers = container.instances - runningContainers.length;
-
-                    for (var i = 0; i < neededContainers; i++) {
-                        await(self.runContainer(container));
-                    }
-                } else if (runningContainers.length > container.instances) {
-                    var overContainers = runningContainers.length - container.instances;
-
-                    for (var i = 0; i < overContainers; i++) {
-                        logger.info("Scaling down %s.", container.image);
-                        helper.removeContainer(runningContainers.pop().Id);
-                    }
+        return new Promise(function(resolve, reject) {
+            if(container.name != undefined) {
+                var runningContainer = await(self.getContainerByName(container.name));
+                if(runningContainer != undefined) {
+                    await(self.stopContainer(runningContainer.Id));
+                    await(self.removeContainer(runningContainer.Id));
                 }
 
+                container.instances = 1; //only allow 1 container.
+            }
+
+            var runningContainers = await(self.getContainersByImage(container.image));
+
+            logger.debug('Found %j %s containers.', runningContainers.length, container.image);
+
+            if (runningContainers.length < container.instances) {
+                var neededContainers = container.instances - runningContainers.length;
+
+                for (var i = 0; i < neededContainers; i++) {
+                    await(self.runContainer(container));
+                }
+            } else if (runningContainers.length > container.instances) {
+                var overContainers = runningContainers.length - container.instances;
+
+                for (var i = 0; i < overContainers; i++) {
+                    logger.info("Scaling down %s.", container.image);
+                    helper.removeContainer(runningContainers.pop().Id);
+                }
+            }
+
+            if(container.restart) {
                 helper.Timer.add(function () {
                     self.spawnContainer(container);
                 }, self.config.scaleInterval * 1000);
-            })();
+            }
+
+            resolve();
         });
     }
 
-    runContainer(originalContainer) {
+    runContainer(container) {
         var self = this;
-        var container = JSON.parse(JSON.stringify(originalContainer)); // copy the variable
 
         logger.info('Starting instance of %s.', container.image);
-
         return async(function() {
             if(container.pull) {
                 await(pullContainer());
@@ -144,7 +159,8 @@ class DockerScaler {
                 Binds: container.volumes,
                 Env: container.env,
                 PortBindings: {},
-                Privileged: container.privileged || false
+                Privileged: container.privileged || false,
+                VolumesFrom: []
             };
 
             return new Promise(function(resolve, reject) {
@@ -179,6 +195,7 @@ class DockerScaler {
 
         // Only search for auto-deployed containers
         var listOpts = {
+            all: 1,
             filters: {
                 label: ['auto-deployed']
             }
@@ -213,26 +230,86 @@ class DockerScaler {
         });
     }
 
-    getContainersByImage(image, onFinish) {
+    getContainersByImage(image) {
         logger.debug('Searching instances of %s.', image);
 
         // Only search for auto-deployed containers
         var listOpts = {
             filters: {
+                status: ['running'],
                 label: ['auto-deployed']
             }
         };
-        docker.listContainers(listOpts, function (err, containers) {
-            var containerList = [];
-            for (var i in containers) {
-                var container = containers[i];
 
-                if (container.Image == image) {
-                    containerList.push(container);
+        return new Promise(function(resolve, reject) {
+            docker.listContainers(listOpts, function (err, containers) {
+                if(err) {
+                    return reject(err);
                 }
-            }
 
-            onFinish(containerList);
+                var containerList = [];
+                for (var i in containers) {
+                    var container = containers[i];
+
+                    if (container.Image == image) {
+                        containerList.push(container);
+                    }
+                }
+
+                resolve(containerList);
+            });
+        });
+    }
+
+    getContainerByName(name) {
+        var listOpts = {
+            all: true,
+            filters: {
+                name: [ name ],
+                label: ['auto-deployed']
+            }
+        };
+
+        return new Promise(function(resolve, reject) {
+            docker.listContainers(listOpts, function(err, containers) {
+                if(err) {
+                    return reject(err);
+                }
+
+                if(containers.length == 1) {
+                    return resolve(containers[0]);
+                }
+
+                resolve(null);
+            })
+        });
+    }
+
+    stopContainer(id) {
+        return new Promise(function(resolve, reject) {
+            var container = docker.getContainer(id);
+
+            container.stop(function(err) {
+                if(err && err.statusCode != 304) {
+                    return reject(err);
+                }
+
+                resolve();
+            })
+        });
+    }
+
+    removeContainer(id) {
+        return new Promise(function(resolve, reject) {
+            var container = docker.getContainer(id);
+
+            container.remove(function(err) {
+                if(err) {
+                    return reject(err);
+                }
+
+                resolve();
+            })
         });
     }
 
