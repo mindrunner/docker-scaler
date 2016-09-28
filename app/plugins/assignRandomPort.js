@@ -15,8 +15,6 @@ var assignRandomPortPlugin = async(function (scaler) {
         if(container.randomPort != undefined && container.randomPort) {
             var randomPort = await(getRandomOpenPort(config.minPort + runningContainers, config.maxPort));
 
-            console.log(randomPort);
-
             containerConfig.PortBindings[randomPort + "/tcp"] = [{
                 HostIp: "0.0.0.0",
                 HostPort: randomPort.toString()
@@ -29,8 +27,6 @@ var assignRandomPortPlugin = async(function (scaler) {
             for(var i in container.randomPorts) {
                 var extPort = await(getRandomOpenPort(config.minPort + runningContainers, config.maxPort)),
                     port = container.randomPorts[i] + "/tcp";
-
-                console.log(extPort);
 
                 containerConfig.PortBindings[port] = [{
                   HostIp: "0.0.0.0",

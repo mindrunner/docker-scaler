@@ -316,6 +316,20 @@ class DockerScaler {
         });
     }
 
+    killContainer(id) {
+        return new Promise(function(resolve, reject) {
+            var container = docker.getContainer(id);
+
+            container.kill(function(err) {
+                if(err && err.statusCode != 304) {
+                    return reject(err);
+                }
+
+                resolve();
+            })
+        });
+    }
+
     removeContainer(id) {
         return new Promise(function(resolve, reject) {
             var container = docker.getContainer(id);

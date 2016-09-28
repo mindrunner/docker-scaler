@@ -13,6 +13,7 @@
     "dockerode": "~2.2",
     "network": "^0.2.1",
     "portscanner": "^1.0.0",
+    "request": "^2.75.0",
     "winston": "~2.2"
   }
 }
