@@ -21,6 +21,7 @@ var volumesFrom = async(function(scaler) {
             container = await(scaler.getContainerByName(containerName));
             if(container == null) {
                 logger.error("Didn't found container %s.", containerName);
+                continue;
             }
 
             containerConfig.VolumesFrom.push(container.Id + ":" + fsMode);
