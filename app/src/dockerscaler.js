@@ -272,6 +272,7 @@ class DockerScaler {
 
         return new Promise(function(resolve, reject) {
             docker.listContainers(listOpts, function(err, containers) {
+                console.log(containers);
                 if(err) {
                     return reject(err);
                 }
