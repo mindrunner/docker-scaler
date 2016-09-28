@@ -290,6 +290,18 @@ class DockerScaler {
         });
     }
 
+    getDockerInfo() {
+        return new Promise(function(resolve, reject) {
+            docker.info(function(err, data) {
+                if(err) {
+                    return reject(err);
+                }
+
+                resolve(data);
+            });
+        });
+    }
+
     stopContainer(id) {
         return new Promise(function(resolve, reject) {
             var container = docker.getContainer(id);

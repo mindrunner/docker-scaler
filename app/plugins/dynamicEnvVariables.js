@@ -6,11 +6,11 @@ const fs = require('fs'),
     network = require('network'),
     os = require("os");
 
-var dynamicEnvVariablesPlugin = function (scaler) {
+var dynamicEnvVariablesPlugin = async(function (scaler) {
     scaler.hooks.beforeCreateLate.push(function(config, args) {
         var container = args[1],
             containerConfig = args[2],
-            dynamicVariables = JSON.parse(JSON.stringify(dynamicEnvVariablesPlugin.dynamicVariables));
+            dynamicVariables = getDynamicVariables();
 
         dynamicVariables['{{CONTAINER_NAME}}'] = containerConfig.name;
 
@@ -37,11 +37,25 @@ var dynamicEnvVariablesPlugin = function (scaler) {
 
         return string;
     }
-};
 
-dynamicEnvVariablesPlugin.dynamicVariables = {
-    "{{HOST_NAME}}": os.hostname()
-};
+    function getDynamicVariables() {
+        var dockerInfo = await(scaler.getDockerInfo());
+        var dynamicVariables = {
+            "{{SERVER_VERSION}}": dockerInfo.ServerVersion,
+            "{{ARCHITECTURE}}": dockerInfo.Architecture,
+            "{{HTTP_PROXY}}": dockerInfo.HttpProxy,
+            "{{HTTPS_PROXY}}": dockerInfo.HttpsProxy
+        };
+
+        if(fs.existsSync('/.dockerenv')) {
+            dynamicVariables['{{HOST_NAME}}'] = dockerInfo.Name;
+        } else {
+            dynamicVariables['{{HOST_NAME}}'] = os.hostname();
+        }
+
+        return dynamicVariables;
+    }
+});
 
 dynamicEnvVariablesPlugin.pluginName = "dynamicEnvVariables";
 
