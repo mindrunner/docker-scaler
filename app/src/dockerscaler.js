@@ -54,6 +54,7 @@ class DockerScaler {
 
         async(function() {
             // Spawning the first time;
+
             for (var i in self.config.containers) {
                 var defaultConfig = JSON.parse(JSON.stringify(self.defaultContainerConfig)), // copy the variables, otherwise they are referenced
                     container = JSON.parse(JSON.stringify(self.config.containers[i]));
@@ -68,6 +69,8 @@ class DockerScaler {
         var self = this;
 
         return new Promise(function(resolve, reject) {
+            var runningContainers = await(self.getContainersByImage(container.image));
+
             if(container.name != undefined) {
                 var runningContainer = await(self.getContainerByName(container.name));
                 if(runningContainer != undefined) {
@@ -76,11 +79,9 @@ class DockerScaler {
                 }
 
                 container.instances = 1; //only allow 1 container.
+            } else {
+                logger.debug('Found %j %s containers.', runningContainers.length, container.image);
             }
-
-            var runningContainers = await(self.getContainersByImage(container.image));
-
-            logger.debug('Found %j %s containers.', runningContainers.length, container.image);
 
             if (runningContainers.length < container.instances) {
                 var neededContainers = container.instances - runningContainers.length;
@@ -98,9 +99,9 @@ class DockerScaler {
             }
 
             if(container.restart) {
-                helper.Timer.add(function () {
-                    self.spawnContainer(container);
-                }, self.config.scaleInterval * 1000);
+                helper.Timer.add(async(function () {
+                    await(self.spawnContainer(container));
+                }), self.config.scaleInterval * 1000);
             }
 
             resolve();
@@ -111,13 +112,12 @@ class DockerScaler {
         var self = this;
 
         logger.info('Starting instance of %s.', container.image);
-        return async(function() {
-            if(container.pull) {
-                await(pullContainer());
-            }
-            var newContainer = await(createContainer());
-            await(startContainer(newContainer));
-        })();
+        if(container.pull) {
+            await(pullContainer());
+        }
+        var newContainer = await(createContainer());
+        await(startContainer(newContainer));
+
 
         // subfunctions
         function pullContainer() {
