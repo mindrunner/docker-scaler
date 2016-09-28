@@ -110,6 +110,7 @@ class DockerScaler {
 
     runContainer(container) {
         var self = this;
+        container = JSON.parse(JSON.stringify(container)); // copy variable to stop referencing
 
         logger.info('Starting instance of %s.', container.image);
         if(container.pull) {
@@ -117,7 +118,6 @@ class DockerScaler {
         }
         var newContainer = await(createContainer());
         await(startContainer(newContainer));
-
 
         // subfunctions
         function pullContainer() {

@@ -8,7 +8,6 @@ const async = require('asyncawait/async'),
     docker = helper.Docker.getInstance();
 
 var volumesFrom = async(function(scaler) {
-
     scaler.hooks.beforeCreate.push(function(config, args) {
         var container = args[1],
             containerConfig = args[2];
