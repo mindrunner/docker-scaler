@@ -280,7 +280,7 @@ class DockerScaler {
                 for(var i in containers) {
                     var container = containers[i];
 
-                    if(container.Names.indexOf(name) != -1) {
+                    if(container.Names.indexOf("/" + name) != -1) {
                         return resolve(container);
                     }
                 }
