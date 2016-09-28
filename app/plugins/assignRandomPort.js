@@ -9,10 +9,14 @@ const fs = require('fs'),
 var assignRandomPortPlugin = async(function (scaler) {
     scaler.hooks.beforeCreate.push(function(config, args) {
         var container = args[1],
-            containerConfig = args[2];
+            containerConfig = args[2],
+            runningContainers = await(scaler.getDockerInfo()).Containers;
 
         if(container.randomPort != undefined && container.randomPort) {
-            var randomPort = await(getRandomOpenPort(config.minPort, config.maxPort));
+            var randomPort = await(getRandomOpenPort(config.minPort + runningContainers, config.maxPort));
+
+            console.log(randomPort);
+
             containerConfig.PortBindings[randomPort + "/tcp"] = [{
                 HostIp: "0.0.0.0",
                 HostPort: randomPort.toString()
@@ -23,8 +27,11 @@ var assignRandomPortPlugin = async(function (scaler) {
 
         if(container.randomPorts != undefined && Array.isArray(container.randomPorts)) {
             for(var i in container.randomPorts) {
-                var extPort = await(getRandomOpenPort(config.minPort, config.maxPort));
-                var port = container.randomPorts[i] + "/tcp";
+                var extPort = await(getRandomOpenPort(config.minPort + runningContainers, config.maxPort)),
+                    port = container.randomPorts[i] + "/tcp";
+
+                console.log(extPort);
+
                 containerConfig.PortBindings[port] = [{
                   HostIp: "0.0.0.0",
                   HostPort: extPort.toString()
