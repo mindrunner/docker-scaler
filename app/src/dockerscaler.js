@@ -272,13 +272,17 @@ class DockerScaler {
 
         return new Promise(function(resolve, reject) {
             docker.listContainers(listOpts, function(err, containers) {
-                console.log(containers);
                 if(err) {
                     return reject(err);
                 }
 
-                if(containers.length == 1) {
-                    return resolve(containers[0]);
+                // Workaround for old docker. They don't support filter by name.
+                for(var i in containers) {
+                    var container = containers[i];
+
+                    if(container.Names.indexOf(name) != -1) {
+                        return resolve(container);
+                    }
                 }
 
                 resolve(null);
