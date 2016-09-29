@@ -154,7 +154,7 @@ class DockerScaler {
         function createContainer() {
             var containerConfig = {
                 Image: container.image,
-                name: container.name || 'container-' + self.generateId(8),
+                name: container.name || self.generateName(container.image) + "-" + self.generateId(8),
                 Labels: {'auto-deployed': 'true'},
                 Binds: container.volumes,
                 Env: container.env,
@@ -355,6 +355,12 @@ class DockerScaler {
         for(var i in this.hooks[hook]) {
             this.hooks[hook][i](this.config, args);
         }
+    }
+
+    generateName(imageName) {
+        var newName = imageName.split("/").pop();
+
+        return newName.toLowerCase().replace(/-+/g, '').replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     }
 
     generateId(len) {

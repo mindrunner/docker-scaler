@@ -13,27 +13,6 @@ const async = require('asyncawait/async'),
 var removeIdleJenkinsSlaves;
 
 removeIdleJenkinsSlaves = function (scaler) {
-    const idleScript = `import hudson.FilePath
-import hudson.model.Node
-import hudson.model.Slave
-import jenkins.model.Jenkins
-
-Jenkins jenkins = Jenkins.instance
-def jenkinsNodes =jenkins.nodes
-
-for (Node node in jenkinsNodes) 
-{
-  // Make sure slave is online
-  if (!node.getComputer().isOffline()) 
-  {           
-    //Make sure that the slave busy executor number is 0.
-    if(node.getComputer().countBusy()==0)
-    {
-       println "$node.nodeName"
-    }
-  }  
-}
-`;
     const defaultConfig = {
         removeIdleJenkinsSlaves: {
             enabled: false,
@@ -58,11 +37,6 @@ for (Node node in jenkinsNodes)
                 continue;
             }
 
-            var age = Math.round(new Date()) - container.Created;
-            if(age < scaler.config.removeIdleJenkinsSlaves.maxAge) {
-                continue;
-            }
-
             await(scaler.killContainer(container.Id));
             await(scaler.removeContainer(container.Id));
             logger.info("Removed idle container %s.", container.Id)
@@ -79,7 +53,7 @@ for (Node node in jenkinsNodes)
                 url: scaler.config.removeIdleJenkinsSlaves.jenkinsMaster + "/scriptText", //URL to hit
                 method: 'POST',
                 form: {
-                    script: idleScript
+                    script: getIdleSlavesAndSetOfflineAfterMaxAgeScript()
                 },
                 auth: {
                     user: scaler.config.removeIdleJenkinsSlaves.username,
@@ -94,6 +68,37 @@ for (Node node in jenkinsNodes)
             });
 
         });
+    };
+
+    var getIdleSlavesAndSetOfflineAfterMaxAgeScript = function() {
+        return `import hudson.FilePath
+import hudson.model.Node
+import hudson.model.Slave
+import jenkins.model.Jenkins
+
+Jenkins jenkins = Jenkins.instance
+def jenkinsNodes = jenkins.nodes
+
+for (Node node in jenkinsNodes) 
+{
+    // Make sure slave is online
+    if (!node.getComputer().isOffline()) 
+    {        
+        def time = System.currentTimeMillis();
+        def startTime = node.getComputer().getConnectTime();
+        def age = Math.round((time - startTime) / 1000);
+        
+        if(age > ${scaler.config.removeIdleJenkinsSlaves.maxAge}) {
+            node.getComputer().setTemporarilyOffline(true, null);
+        }
+    } else {
+        if(node.getComputer().countBusy() == 0)
+        {
+            node.getComputer().doDoDelete();
+            println "$node.nodeName"
+        }
+    }
+}`;
     };
 
     if(scaler.config.removeIdleJenkinsSlaves.enabled) {
