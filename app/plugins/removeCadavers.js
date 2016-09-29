@@ -40,6 +40,7 @@ removeCadavers = function (scaler) {
     var getCadavers = function() {
         return new Promise(function(resolve, reject) {
             var listOpts = {
+                all: true,
                 filters: {
                     status: ["exited"],
                     label: ['auto-deployed']

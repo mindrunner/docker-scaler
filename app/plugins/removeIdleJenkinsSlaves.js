@@ -31,14 +31,15 @@ removeIdleJenkinsSlaves = function (scaler) {
 
             logger.debug("Checking if there are idle containers.");
             for(var i in idleNodes) {
-                var idleNode = idleNodes[i].substring(14), //@TODO Nicht generisch!
-                    container = await(scaler.getContainerByName(idleNode));
+                var idleNodeId = idleNodes[i],
+                    container = await(findContainer(idleNodeId))
 
                 if(container == null) {
                     continue;
                 }
 
                 var containerInfo = await(scaler.inspectContainer(container.Id));
+                await(removeIdleHostFromJenkins(idleNodeId));
                 if(containerInfo.State.Running) {
                     await(scaler.killContainer(container.Id));
                 }
@@ -53,6 +54,30 @@ removeIdleJenkinsSlaves = function (scaler) {
             checkIdleSlaves()
         }, scaler.config.removeIdleJenkinsSlaves.checkInterval * 1000);
     });
+
+    var findContainer = function(id) {
+        return new Promise(function(resolve, reject) {
+            var listOpts = {
+                all: true,
+                filters: {
+                    label: ['auto-deployed']
+                }
+            };
+            docker.listContainers(listOpts, function(err, containers) {
+                if(err) {
+                    return reject(err);
+                }
+                for(var i in containers) {
+                    var container = containers[i];
+                    if(container.Names[0].slice(-8) == id) {
+                        return resolve(container);
+                    }
+
+                    resolve(null);
+                }
+            });
+        });
+    };
 
     var getIdles = function() {
         return new Promise(function(resolve, reject) {
@@ -101,8 +126,54 @@ for (Node node in jenkinsNodes)
     } else {
         if(node.getComputer().countBusy() == 0)
         {
+            // node.getComputer().doDoDelete();
+            println "$node.nodeName"[-8..-1]
+        }
+    }
+}`;
+    };
+
+    var removeIdleHostFromJenkins = function(nodeId) {
+        return new Promise(function(resolve, reject) {
+            request({
+                url: scaler.config.removeIdleJenkinsSlaves.jenkinsMaster + "/scriptText", //URL to hit
+                method: 'POST',
+                form: {
+                    script: removeIdleHostFromJenkinsScript(nodeId)
+                },
+                auth: {
+                    user: scaler.config.removeIdleJenkinsSlaves.username,
+                    pass: scaler.config.removeIdleJenkinsSlaves.password
+                }
+            }, function(error, response, body){
+                if(error) {
+                    return reject(error);
+                }
+
+                resolve(body);
+            });
+
+        });
+    };
+
+    var removeIdleHostFromJenkinsScript = function(nodeId) {
+        return `import hudson.FilePath
+import hudson.model.Node
+import hudson.model.Slave
+import jenkins.model.Jenkins
+
+Jenkins jenkins = Jenkins.instance
+def jenkinsNodes = jenkins.nodes
+
+for (Node node in jenkinsNodes) 
+{
+    // Make sure slave is online
+    if (node.getComputer().isOffline()) 
+    {        
+        def nodeId = "$node.nodeName"[-8..-1]
+        
+        if(nodeId == "${nodeId}") {
             node.getComputer().doDoDelete();
-            println "$node.nodeName"
         }
     }
 }`;
