@@ -24,7 +24,8 @@ class DockerScaler {
             containers: [],
             logLevel: 'info',
             minPort: 40000, //settings for random ports
-            maxPort: 50000
+            maxPort: 50000,
+            auth: {}
         };
 
         this.defaultContainerConfig = {
@@ -129,9 +130,15 @@ class DockerScaler {
 
         // subfunctions
         function pullContainer() {
+            var pullOpts = {};
+
+            if(self.config.auth != {}) {
+                pullOpts.authconfig = self.config.auth;
+            }
+
             logger.info("Pulling %s...",container.image);
             return new Promise(function(resolve, reject) {
-                docker.pull(container.image, function (err, stream) {
+                docker.pull(container.image, pullOpts, function (err, stream) {
                     docker.modem.followProgress(stream, onFinished, onProgress);
 
                     function onFinished(err, output) {
@@ -382,7 +389,12 @@ class DockerScaler {
     generateName(imageName) {
         var newName = imageName.split("/").pop().replace('jenkins','').replace('slave','');
 
-        return newName.toLowerCase().replace(':', '-').replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        return newName
+            .toLowerCase()
+            .replace('-','')
+            .replace(':', '-')
+            .replace(/\s+/g, '-')
+            .replace(/[^a-z0-9-]/g, '');
     }
 
     generateId(len) {
