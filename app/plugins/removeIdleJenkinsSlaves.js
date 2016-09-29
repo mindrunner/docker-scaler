@@ -36,11 +36,11 @@ removeIdleJenkinsSlaves = function (scaler) {
                     container = await(findContainer(idleNodeId));
 
                 if(container == null) {
-                    logger.debug("Idle container %s is not running on this host... continue...", container.Id);
+                    logger.debug("Idle container %s is not running on this host... continue...", idleNodeId);
                     continue;
                 }
 
-                logger.debug("Idle container %s is running on this host... Killing...", container.Id);
+                logger.debug("Idle container %s (%s) is running on this host... Killing...", container.Id, idleNodeId);
                 var containerInfo = await(scaler.inspectContainer(container.Id));
                 await(removeIdleHostFromJenkins(idleNodeId));
                 if(containerInfo.State.Running) {
