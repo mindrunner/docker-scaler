@@ -37,7 +37,10 @@ removeIdleJenkinsSlaves = function (scaler) {
                 continue;
             }
 
-            await(scaler.killContainer(container.Id));
+            var containerInfo = await(scaler.inspectContainer(container.Id));
+            if(containerInfo.State.Running) {
+                await(scaler.killContainer(container.Id));
+            }
             await(scaler.removeContainer(container.Id));
             logger.info("Removed idle container %s.", container.Id)
         }

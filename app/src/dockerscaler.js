@@ -2,7 +2,6 @@
 
 const fs = require('fs'),
     crypto = require('crypto'),
-    portscanner = require('portscanner'),
     async = require('asyncawait/async'),
     await = require('asyncawait/await'),
     network = require('network'),
@@ -340,6 +339,20 @@ class DockerScaler {
                 }
 
                 resolve();
+            })
+        });
+    }
+
+    inspectContainer(id) {
+        return new Promise(function(resolve, reject) {
+            var container = docker.getContainer(id);
+
+            container.inspect(function(err, data) {
+                if(err) {
+                    return reject(err);
+                }
+
+                resolve(data);
             })
         });
     }

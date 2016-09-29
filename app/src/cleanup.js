@@ -9,19 +9,22 @@ exports.Cleanup = function Cleanup() {
         logger.info('Cleaning up...');
 
         helper.Timer.clearAll();
-        var listOpts = {
-            all: true,
-            filters: {
-                label: ['auto-deployed']
-            }
-        };
-        docker.listContainers(listOpts, function (err, containers) {
-            for (var i in containers) {
-                var container = containers[i];
 
-                helper.removeContainer(container.Id);
-            }
-        });
+        if(process.env.CLEANUP && process.env.CLEANUP == "true") {
+            var listOpts = {
+                all: true,
+                filters: {
+                    label: ['auto-deployed']
+                }
+            };
+            docker.listContainers(listOpts, function (err, containers) {
+                for (var i in containers) {
+                    var container = containers[i];
+
+                    helper.removeContainer(container.Id);
+                }
+            });
+        }
     });
 
     // do app specific cleaning before exiting
