@@ -78,11 +78,12 @@ removeIdleJenkinsSlaves = function (scaler) {
 console.log(containerId);
                     if(containerId.trim() == id.trim()) {
                         console.log("found " + container.Id)
+
                         return resolve(container);
                     }
-
-                    resolve(null);
                 }
+
+                resolve(null);
             });
         });
     };
