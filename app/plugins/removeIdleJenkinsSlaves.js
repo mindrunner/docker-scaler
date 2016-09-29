@@ -51,7 +51,7 @@ for (Node node in jenkinsNodes)
 
         logger.debug("Checking if there are idle containers.");
         for(var i in idleNodes) {
-            var idleNode = idleNodes[i].substring(14),
+            var idleNode = idleNodes[i].substring(14), //@TODO Nicht generisch!
                 container = await(scaler.getContainerByName(idleNode));
 
             if(container == null) {
@@ -59,7 +59,7 @@ for (Node node in jenkinsNodes)
             }
 
             var age = Math.round(new Date()) - container.Created;
-            if(age < maxAge) {
+            if(age < scaler.config.removeIdleJenkinsSlaves.maxAge) {
                 continue;
             }
 
