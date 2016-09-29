@@ -111,7 +111,7 @@ class DockerScaler {
             try{
                 await(pullContainer());
             } catch(err) {
-                logger.error("Couldn't pull %s. Trying to start it anyway.", container.image);
+                logger.error("Couldn't pull %s. Trying to start it anyway. Error: %s", container.image, err);
             }
         }
 
@@ -119,7 +119,7 @@ class DockerScaler {
             var newContainer = await(createContainer());
             await(startContainer(newContainer));
         } catch(err) {
-            logger.error("Couldn't start %s. Will try in next cycle.", container.image);
+            logger.error("Couldn't start %s. Will try in next cycle. Error: %s", container.image, err);
         }
 
         // subfunctions
@@ -172,6 +172,10 @@ class DockerScaler {
                 VolumesFrom: []
             };
 
+            if(!container.restart) {
+                containerConfig.Labels['norestart'] = 'true';
+            }
+
             return new Promise(function(resolve, reject) {
                 self.runHook('beforeCreate', container, containerConfig);
                 self.runHook('beforeCreateLate', container, containerConfig);
@@ -197,46 +201,6 @@ class DockerScaler {
                 });
             });
         }
-    }
-
-    removeCadavers() {
-        var self = this;
-
-        // Only search for auto-deployed containers
-        var listOpts = {
-            all: 1,
-            filters: {
-                label: ['auto-deployed']
-            }
-        };
-        docker.listContainers(listOpts, function (err, containers) {
-            var time = Math.round(new Date().getTime() / 1000),
-                containersKilled = 0;
-
-            for (var i in containers) {
-                var container = containers[i];
-                var containerAge = time - container.Created;
-
-                if (containerAge > self.config.maxAge) {
-                    logger.info("Container %s is to old (%j seconds). Removing...", container.Names[0], containerAge);
-                    helper.removeContainer(container.Id);
-                    containersKilled++;
-                }
-
-                if(self.config.slowKill > 0 && containersKilled >= self.config.slowKill) {
-                    logger.debug("Slow kill limit reached, sleeping %j seconds.", self.config.slowKillWait);
-
-                    helper.Timer.add(function () {
-                        self.watchContainerAge();
-                    }, self.config.slowKillWait * 1000);
-                    return; // stop processing
-                }
-            }
-
-            helper.Timer.add(function () {
-                self.watchContainerAge();
-            }, self.config.ageCheckInterval * 1000);
-        });
     }
 
     getContainersByImage(image) {

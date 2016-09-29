@@ -51,7 +51,16 @@ removeCadavers = function (scaler) {
                     return reject(err);
                 }
 
-                resolve(containers);
+                var result = [];
+                for(var i in containers) {
+                    if(containers[i].Labels['norestart'] != undefined) {
+                        continue;
+                    }
+
+                    result.push(containers[i]);
+                }
+
+                resolve(result);
             });
         });
     };
