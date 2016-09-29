@@ -189,7 +189,7 @@ class DockerScaler {
         }
     }
 
-    watchContainerAge() {
+    removeCadavers() {
         var self = this;
 
         // Only search for auto-deployed containers
