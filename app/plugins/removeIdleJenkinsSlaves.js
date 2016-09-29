@@ -36,9 +36,11 @@ removeIdleJenkinsSlaves = function (scaler) {
                     container = await(findContainer(idleNodeId));
 
                 if(container == null) {
+                    logger.debug("Idle container %s is not running on this host... continue...", container.Id);
                     continue;
                 }
 
+                logger.debug("Idle container %s is running on this host... Killing...", container.Id);
                 var containerInfo = await(scaler.inspectContainer(container.Id));
                 await(removeIdleHostFromJenkins(idleNodeId));
                 if(containerInfo.State.Running) {
@@ -127,7 +129,6 @@ for (Node node in jenkinsNodes)
     } else {
         if(node.getComputer().countBusy() == 0)
         {
-            // node.getComputer().doDoDelete();
             println "$node.nodeName"[-8..-1]
         }
     }
@@ -171,7 +172,7 @@ for (Node node in jenkinsNodes)
     // Make sure slave is online
     if (node.getComputer().isOffline()) 
     {        
-        def nodeId = "$node.nodeName"[-8..-1]
+        def nodeId = node.nodeName[-8..-1]
         
         if(nodeId == "${nodeId}") {
             node.getComputer().doDoDelete();
