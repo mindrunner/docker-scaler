@@ -76,6 +76,7 @@ removeIdleJenkinsSlaves = function (scaler) {
                         containerId = container.Names[0].slice(-8);
 console.log(containerId);
                     if(containerId.trim() == id.trim()) {
+                        console.log("found " + container.Id)
                         return resolve(container);
                     }
 
