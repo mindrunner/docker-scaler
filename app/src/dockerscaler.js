@@ -72,12 +72,6 @@ class DockerScaler {
             var runningContainers = await(self.getContainersByImage(container.image));
 
             if(container.name != undefined) {
-                var runningContainer = await(self.getContainerByName(container.name));
-                if(runningContainer != undefined) {
-                    await(self.stopContainer(runningContainer.Id));
-                    await(self.removeContainer(runningContainer.Id));
-                }
-
                 container.instances = 1; //only allow 1 container.
             } else {
                 logger.debug('Found %j %s containers.', runningContainers.length, container.image);
