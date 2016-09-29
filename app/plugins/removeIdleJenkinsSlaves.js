@@ -59,6 +59,7 @@ removeIdleJenkinsSlaves = function (scaler) {
     });
 
     var findContainer = function(id) {
+        console.log(id);
         return new Promise(function(resolve, reject) {
             var listOpts = {
                 all: true,
@@ -71,8 +72,10 @@ removeIdleJenkinsSlaves = function (scaler) {
                     return reject(err);
                 }
                 for(var i in containers) {
-                    var container = containers[i];
-                    if(container.Names[0].slice(-8) == id) {
+                    var container = containers[i],
+                        containerId = container.Names[0].slice(-8);
+console.log(containerId);
+                    if(containerId.trim() == id.trim()) {
                         return resolve(container);
                     }
 
