@@ -35,7 +35,6 @@ removeIdleJenkinsSlaves = function (scaler) {
                 var idleNodeId = idleNodes[i];
                 var container = await(findContainer(idleNodeId));
 
-                console.log(container)
                 if(container == null) {
                     logger.debug("Idle container %s is not running on this host... continue...", idleNodeId);
                     continue;
@@ -60,7 +59,6 @@ removeIdleJenkinsSlaves = function (scaler) {
     });
 
     var findContainer = function(id) {
-        console.log(id);
         return new Promise(function(resolve, reject) {
             var listOpts = {
                 all: true,
@@ -75,10 +73,8 @@ removeIdleJenkinsSlaves = function (scaler) {
                 for(var i in containers) {
                     var container = containers[i],
                         containerId = container.Names[0].slice(-8);
-console.log(containerId);
-                    if(containerId.trim() == id.trim()) {
-                        console.log("found " + container.Id)
 
+                    if(containerId.trim() == id.trim()) {
                         return resolve(container);
                     }
                 }
