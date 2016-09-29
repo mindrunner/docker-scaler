@@ -113,10 +113,19 @@ class DockerScaler {
 
         logger.info('Starting instance of %s.', container.image);
         if(container.pull) {
-            await(pullContainer());
+            try{
+                await(pullContainer());
+            } catch(err) {
+                logger.error("Couldn't pull %s. Trying to start it anyway.", container.image);
+            }
         }
-        var newContainer = await(createContainer());
-        await(startContainer(newContainer));
+
+        try {
+            var newContainer = await(createContainer());
+            await(startContainer(newContainer));
+        } catch(err) {
+            logger.error("Couldn't start %s. Will try in next cycle.", container.image);
+        }
 
         // subfunctions
         function pullContainer() {

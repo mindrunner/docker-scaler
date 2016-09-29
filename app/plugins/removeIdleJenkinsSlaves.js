@@ -26,23 +26,27 @@ removeIdleJenkinsSlaves = function (scaler) {
     scaler.config = Object.assign(defaultConfig, scaler.config);
 
     var checkIdleSlaves = async(function() {
-        var idleNodes = await(getIdles());
+        try {
+            var idleNodes = await(getIdles());
 
-        logger.debug("Checking if there are idle containers.");
-        for(var i in idleNodes) {
-            var idleNode = idleNodes[i].substring(14), //@TODO Nicht generisch!
-                container = await(scaler.getContainerByName(idleNode));
+            logger.debug("Checking if there are idle containers.");
+            for(var i in idleNodes) {
+                var idleNode = idleNodes[i].substring(14), //@TODO Nicht generisch!
+                    container = await(scaler.getContainerByName(idleNode));
 
-            if(container == null) {
-                continue;
+                if(container == null) {
+                    continue;
+                }
+
+                var containerInfo = await(scaler.inspectContainer(container.Id));
+                if(containerInfo.State.Running) {
+                    await(scaler.killContainer(container.Id));
+                }
+                await(scaler.removeContainer(container.Id));
+                logger.info("Removed idle container %s.", container.Id)
             }
-
-            var containerInfo = await(scaler.inspectContainer(container.Id));
-            if(containerInfo.State.Running) {
-                await(scaler.killContainer(container.Id));
-            }
-            await(scaler.removeContainer(container.Id));
-            logger.info("Removed idle container %s.", container.Id)
+        } catch(err) {
+            logger.error(err);
         }
 
         helper.Timer.add(function () {
