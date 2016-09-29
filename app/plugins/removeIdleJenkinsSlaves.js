@@ -32,9 +32,10 @@ removeIdleJenkinsSlaves = function (scaler) {
             logger.info("Found %d idle containers.", idleNodes.length);
 
             for(var i in idleNodes) {
-                var idleNodeId = idleNodes[i],
-                    container = await(findContainer(idleNodeId));
+                var idleNodeId = idleNodes[i];
+                var container = await(findContainer(idleNodeId));
 
+                console.log(container)
                 if(container == null) {
                     logger.debug("Idle container %s is not running on this host... continue...", idleNodeId);
                     continue;
