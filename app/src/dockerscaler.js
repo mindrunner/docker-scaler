@@ -35,7 +35,8 @@ class DockerScaler {
             volumes: [],
             env: [],
             ports: [],
-            restart: true
+            restart: true,
+            volumes_from: []
         };
 
         this.config = Object.assign(this.defaultConfig, config);

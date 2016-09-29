@@ -29,22 +29,39 @@ The configuration has to be made in JSON and needs to be mounted to _/opt/docker
 {
   "scaleInterval": 15, // Interval in seconds to check container scaling.
   
-  "maxAge": 0, // Defines the maximum age of a container in seconds, set 0 to disable.  
-  "ageCheckInterval": 30, // Interval in seconds to check age of containers.
-  
-  "slowKill": 1, // Maximum amount of containers to remove at once, if they are to old.
-  "slowKillWait": 10, // Wait-time in seconds after reaching the slowKill limit.
-  
-  "autoPullInterval": 0, // Interval in seconds to pull new images, set 0 to disable
-  
   "logLevel": "debug", // Loglevel of the scaler.
   
   "containers": [ // List of containers to run
     {
+      "pull": true, // You can disable image pulling
       "image": "httpd:latest", // Image to run.
+      "name" : "test-volume", // Allows you to set a dedictated name, but only for one instance.
       "instances": 5, // Amount of instances to run.
       "volumes": ["/tmp:/var/www/"] // List of volumes to mount.
+      "volumes_from": ["test-volume:ro"], //Use volumes from other images, use the container name.
+      "env": ["HELLO=WORLD"], // Environment variables 
+      "randomPorts": [], // List of randomports to open
+      "randomPort": false, // open a dedictated random port
+       "restart": true, // auto restart containers
     }
-  ]
+  ],
+  "removeIdleJenkinsSlaves": { // auto-remove container nodes from jenkins ci
+      "enabled": true,
+      "jenkinsMaster": "https://ci.example.com",
+      "username": "myuser",
+      "password": "mypass",
+      "checkInterval": 30, //seconds
+      "maxAge": 600 // maximum Age in seconds after container gets marked for deletion.
+    },
+    "removeCadavers": { // auto remove exited containers
+      "enabled": false,
+      "checkInterval": 30 // seconds
+    },
+    "auth": { // authentication on docker hub
+      "serveraddress": "https://index.docker.io/v1",
+      "username": "myuser",
+      "password": "mypass",
+      "email": "my@email.ch"
+    }
 }
 ```
