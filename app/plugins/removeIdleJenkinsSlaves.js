@@ -26,13 +26,14 @@ removeIdleJenkinsSlaves = function (scaler) {
     scaler.config = Object.assign(defaultConfig, scaler.config);
 
     var checkIdleSlaves = async(function() {
+        logger.debug("Checking if there are idle containers.");
         try {
             var idleNodes = await(getIdles());
+            logger.info("Found %d idle containers.", idleNodes.length);
 
-            logger.debug("Checking if there are idle containers.");
             for(var i in idleNodes) {
                 var idleNodeId = idleNodes[i],
-                    container = await(findContainer(idleNodeId))
+                    container = await(findContainer(idleNodeId));
 
                 if(container == null) {
                     continue;
@@ -51,7 +52,7 @@ removeIdleJenkinsSlaves = function (scaler) {
         }
 
         helper.Timer.add(function () {
-            checkIdleSlaves()
+            checkIdleSlaves();
         }, scaler.config.removeIdleJenkinsSlaves.checkInterval * 1000);
     });
 
