@@ -371,7 +371,7 @@ class DockerScaler {
     }
 
     generateName(imageName) {
-        var newName = imageName.split("/").pop();
+        var newName = imageName.split("/").pop().replace('jenkins','').replace('slave','');
 
         return newName.toLowerCase().replace(/-+/g, '').replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     }

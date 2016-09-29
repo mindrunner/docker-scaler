@@ -48,9 +48,9 @@ var dynamicEnvVariablesPlugin = async(function (scaler) {
         };
 
         if(fs.existsSync('/.dockerenv')) {
-            dynamicVariables['{{HOST_NAME}}'] = dockerInfo.Name;
+            dynamicVariables['{{HOST_NAME}}'] = dockerInfo.Name.split('.')[0];
         } else {
-            dynamicVariables['{{HOST_NAME}}'] = os.hostname();
+            dynamicVariables['{{HOST_NAME}}'] = os.hostname().split('.')[0];
         }
 
         return dynamicVariables;
