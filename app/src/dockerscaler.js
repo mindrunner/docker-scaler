@@ -353,13 +353,14 @@ class DockerScaler {
     }
 
     trim(str) {
-        var allowedChars = /a-zA-Z/;
+        var regex = /[a-zA-Z0-9]/;
 
-        while(!allowedChars.test(str.charAt(0))) {
+        while(!regex.test(str.charAt(0))) {
             str = str.slice(1);
+
         }
 
-        while(!allowedChars.test(str.charAt(str.length - 1))){
+        while(!regex.test(str.charAt(str.length - 1))){
             str = str.slice(0, -1);
         }
 
