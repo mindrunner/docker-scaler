@@ -103,7 +103,7 @@ removeIdleJenkinsSlaves = function (scaler) {
 
                 var serverList = body.trim().split("\n");
                 if(serverList.length == 0) {
-                    return reject("Didn't get any server from API").
+                    return reject("Didn't get any server from API");
                 }
 
                 for(var i in serverList) {
