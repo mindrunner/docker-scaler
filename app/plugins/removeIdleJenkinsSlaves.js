@@ -101,7 +101,18 @@ removeIdleJenkinsSlaves = function (scaler) {
                     return reject(error);
                 }
 
-                resolve(body.trim().split("\n"));
+                var serverList = body.trim().split("\n");
+                if(serverList.length == 0) {
+                    return reject("Didn't get any server from API").
+                }
+
+                for(var i in serverList) {
+                    if(serverList[i].length != 8) {
+                        return reject("Got error from server:\n" + body);
+                    }
+                }
+
+                resolve(serverList);
             });
 
         });

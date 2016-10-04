@@ -347,8 +347,23 @@ class DockerScaler {
 
     generateName(imageName) {
         var newName = imageName.split("/").pop().replace('jenkins','').replace('slave','');
+        newName = newName.toLowerCase().replace('-','').replace(':', '-').replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
-        return newName.toLowerCase().replace('-','').replace(':', '-').replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        return this.trim(newName);
+    }
+
+    trim(str) {
+        var allowedChars = /a-zA-Z/;
+
+        while(!allowedChars.test(str.charAt(0))) {
+            str = str.slice(1);
+        }
+
+        while(!allowedChars.test(str.charAt(str.length - 1))){
+            str = str.slice(0, -1);
+        }
+
+        return str;
     }
 
     generateId(len) {
