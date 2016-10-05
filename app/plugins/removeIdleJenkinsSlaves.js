@@ -23,10 +23,50 @@ removeIdleJenkinsSlaves = function (scaler) {
             password: null
         }
     };
+
     scaler.config = Object.assign(defaultConfig, scaler.config);
 
-    var checkIdleSlaves = async(function() {
-        logger.debug("Checking if there are idle containers.");
+    var checkSlaves = async(function() {
+        checkAge();
+        checkIdles();
+
+        helper.Timer.add(function () {
+            checkSlaves();
+        }, scaler.config.removeIdleJenkinsSlaves.checkInterval * 1000);
+    });
+
+    var checkAge = function() {
+        logger.debug("Checking slaves states...");
+        try {
+            var nodes = await(getNodes());
+            logger.info("Found %d containers.", nodes.length);
+
+            for(var i in nodes) {
+                var nodeId = nodes[i];
+                var container = await(findContainer(nodeId));
+
+                if(container == null) {
+                    logger.debug("Container %s is not running on this host... continue...", nodeId);
+                    continue;
+                }
+
+                logger.debug("Container %s (%s) is running on this host... checking...", container.Id, nodeId);
+                var age = Math.floor(Date.now() / 1000) - container.Created;
+                if(age < scaler.config.removeIdleJenkinsSlaves.maxAge) {
+                    logger.debug("Container %s (Age: %ds) is young enough. Won't kill.", container.Id, age);
+                    continue;
+                }
+
+                await(setOldNodeOffline(nodeId));
+                logger.info("Container %s (Age: %ds) was to old. Set offline.", container.Id, age);
+            }
+        } catch(err) {
+            logger.error(err);
+        }
+    };
+
+    var checkIdles = function() {
+        logger.debug("Checking idle slaves...");
         try {
             var idleNodes = await(getIdles());
             logger.info("Found %d idle containers.", idleNodes.length);
@@ -52,11 +92,7 @@ removeIdleJenkinsSlaves = function (scaler) {
         } catch(err) {
             logger.error(err);
         }
-
-        helper.Timer.add(function () {
-            checkIdleSlaves();
-        }, scaler.config.removeIdleJenkinsSlaves.checkInterval * 1000);
-    });
+    };
 
     var findContainer = function(id) {
         return new Promise(function(resolve, reject) {
@@ -90,7 +126,7 @@ removeIdleJenkinsSlaves = function (scaler) {
                 url: scaler.config.removeIdleJenkinsSlaves.jenkinsMaster + "/scriptText", //URL to hit
                 method: 'POST',
                 form: {
-                    script: getIdleSlavesAndSetOfflineAfterMaxAgeScript()
+                    script: getIdleSlavesJenkinsScript()
                 },
                 auth: {
                     user: scaler.config.removeIdleJenkinsSlaves.username,
@@ -118,34 +154,37 @@ removeIdleJenkinsSlaves = function (scaler) {
         });
     };
 
-    var getIdleSlavesAndSetOfflineAfterMaxAgeScript = function() {
-        return `import hudson.FilePath
-import hudson.model.Node
-import hudson.model.Slave
-import jenkins.model.Jenkins
+    var getNodes = function() {
+        return new Promise(function(resolve, reject) {
+            request({
+                url: scaler.config.removeIdleJenkinsSlaves.jenkinsMaster + "/scriptText", //URL to hit
+                method: 'POST',
+                form: {
+                    script: getAllNodesJenkinsScript()
+                },
+                auth: {
+                    user: scaler.config.removeIdleJenkinsSlaves.username,
+                    pass: scaler.config.removeIdleJenkinsSlaves.password
+                }
+            }, function(error, response, body){
+                if(error) {
+                    return reject(error);
+                }
 
-Jenkins jenkins = Jenkins.instance
-def jenkinsNodes = jenkins.nodes
+                var serverList = body.trim().split("\n");
+                if(serverList.length == 0) {
+                    return reject("Didn't get any server from API");
+                }
 
-for (Node node in jenkinsNodes) 
-{
-    // Make sure slave is online
-    if (!node.getComputer().isOffline()) 
-    {        
-        def time = System.currentTimeMillis();
-        def startTime = node.getComputer().getConnectTime();
-        def age = Math.round((time - startTime) / 1000);
-        
-        if(age > ${scaler.config.removeIdleJenkinsSlaves.maxAge}) {
-            node.getComputer().setTemporarilyOffline(true, null);
-        }
-    } else {
-        if(node.getComputer().countBusy() == 0)
-        {
-            println "$node.nodeName"[-8..-1]
-        }
-    }
-}`;
+                for(var i in serverList) {
+                    if(serverList[i].length != 8) {
+                        return reject("Got error from server:\n" + body);
+                    }
+                }
+
+                resolve(serverList);
+            });
+        });
     };
 
     var removeIdleHostFromJenkins = function(nodeId) {
@@ -171,6 +210,81 @@ for (Node node in jenkinsNodes)
         });
     };
 
+    var getIdleSlavesJenkinsScript = function() {
+        return `import hudson.FilePath
+import hudson.model.Node
+import hudson.model.Slave
+import jenkins.model.Jenkins
+
+Jenkins jenkins = Jenkins.instance
+def jenkinsNodes = jenkins.nodes
+
+for(Node node in jenkinsNodes)
+{
+    if(node.nodeName.length() < 8) {
+        continue;
+    }
+
+    // When slave is offline and does nothing
+    if(node.getComputer().isOffline() && node.getComputer().countBusy() == 0)
+    {
+        def nodeId = node.nodeName[-8..-1]
+        println nodeId
+    }
+}`;
+    };
+
+    var setOldNodeOffline = function(nodeId) {
+        return new Promise(function(resolve, reject) {
+            request({
+                url: scaler.config.removeIdleJenkinsSlaves.jenkinsMaster + "/scriptText", //URL to hit
+                method: 'POST',
+                form: {
+                    script: setOldNodeOfflineJenkinsScript(nodeId)
+                },
+                auth: {
+                    user: scaler.config.removeIdleJenkinsSlaves.username,
+                    pass: scaler.config.removeIdleJenkinsSlaves.password
+                }
+            }, function(error, response, body){
+                if(error) {
+                    return reject(error);
+                }
+
+                resolve(body);
+            });
+
+        });
+    };
+
+    var setOldNodeOfflineJenkinsScript = function(nodeId) {
+        return `import hudson.FilePath
+import hudson.model.Node
+import hudson.model.Slave
+import jenkins.model.Jenkins
+
+Jenkins jenkins = Jenkins.instance
+def jenkinsNodes = jenkins.nodes
+
+for (Node node in jenkinsNodes) 
+{
+    if(node.nodeName.length() < 8) {
+        continue;
+    }
+    
+    // Make sure slave is online
+    if (!node.getComputer().isOffline()) 
+    {        
+        def nodeId = node.nodeName[-8..-1]
+        
+        if(nodeId == "${nodeId}") {
+            node.getComputer().setTemporarilyOffline(true, null);
+            println "true"
+        }
+    }
+}`;
+    };
+
     var removeIdleHostFromJenkinsScript = function(nodeId) {
         return `import hudson.FilePath
 import hudson.model.Node
@@ -182,6 +296,10 @@ def jenkinsNodes = jenkins.nodes
 
 for (Node node in jenkinsNodes) 
 {
+    if(node.nodeName.length() < 8) {
+        continue;
+    }
+    
     // Make sure slave is online
     if (node.getComputer().isOffline()) 
     {        
@@ -189,13 +307,35 @@ for (Node node in jenkinsNodes)
         
         if(nodeId == "${nodeId}") {
             node.getComputer().doDoDelete();
+            println "true"
         }
     }
 }`;
     };
 
+    var getAllNodesJenkinsScript = function() {
+        return `import hudson.FilePath
+import hudson.model.Node
+import hudson.model.Slave
+import jenkins.model.Jenkins
+
+Jenkins jenkins = Jenkins.instance
+def jenkinsNodes = jenkins.nodes
+
+for (Node node in jenkinsNodes)
+{
+    if(node.nodeName.length() < 8) {
+        continue;
+    }
+
+    def nodeId = node.nodeName[-8..-1]
+    println nodeId
+}`;
+    };
+
     if(scaler.config.removeIdleJenkinsSlaves.enabled) {
-        checkIdleSlaves();
+        //checkIdleSlaves();
+        checkSlaves();
     }
 };
 
