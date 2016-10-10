@@ -19,6 +19,7 @@ var assignRandomPortPlugin = async(function (scaler) {
                 HostIp: "0.0.0.0",
                 HostPort: randomPort.toString()
             }];
+            containerConfig.ExposedPorts[randomPort.toString() + "/tcp"] = {};
 
             containerConfig.Env.push("RANDOM_PORT=" + randomPort);
         }
@@ -32,6 +33,7 @@ var assignRandomPortPlugin = async(function (scaler) {
                   HostIp: "0.0.0.0",
                   HostPort: extPort.toString()
                 }];
+                containerConfig.ExposedPorts[extPort.toString() + "/tcp"] = {};
 
                 containerConfig.Env.push("RANDOM_PORT" + i + "=" + extPort);
             }

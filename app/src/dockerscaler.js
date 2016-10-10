@@ -169,6 +169,7 @@ class DockerScaler {
                 Binds: container.volumes,
                 Env: container.env,
                 PortBindings: {},
+                ExposedPorts: {},
                 Privileged: container.privileged || false,
                 VolumesFrom: []
             };
