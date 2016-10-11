@@ -174,11 +174,12 @@ class DockerScaler {
                 Image: container.image,
                 name: container.name || self.generateName(container.image) + "-" + self.generateId(8),
                 Labels: {'auto-deployed': 'true'},
-                Binds: container.volumes,
                 Env: container.env,
                 PortBindings: {},
                 ExposedPorts: {},
                 Privileged: container.privileged || false,
+                Binds: [],
+                Volumes: {},
                 VolumesFrom: []
             };
 
