@@ -4,66 +4,51 @@ const fs = require('fs'),
     async = require('asyncawait/async'),
     await = require('asyncawait/await'),
     network = require('network'),
-    portscanner = require('portscanner');
+    portastic = require('portastic');
 
 var assignRandomPortPlugin = async(function (scaler) {
-    scaler.hooks.beforeCreate.push(function(config, args) {
+    scaler.hooks.beforeCreate.push(function (config, args) {
         var container = args[1],
             containerConfig = args[2],
             runningContainers = await(scaler.getDockerInfo()).Containers;
 
-        if(container.randomPort != undefined && container.randomPort) {
-            var randomPort = await(getRandomOpenPort(config.minPort + runningContainers, config.maxPort));
-
+        if (container.randomPort != undefined && container.randomPort) {
+            var randomPort = await(portastic.find({
+                min: config.minPort + runningContainers,
+                max: config.maxPort,
+                retrieve: 1
+            }));
+            console.log(randomPort);
             containerConfig.PortBindings[randomPort + "/tcp"] = [{
                 HostIp: "0.0.0.0",
                 HostPort: randomPort.toString()
             }];
             containerConfig.ExposedPorts[randomPort.toString() + "/tcp"] = {};
-
             containerConfig.Env.push("RANDOM_PORT=" + randomPort);
         }
 
-        if(container.randomPorts != undefined && Array.isArray(container.randomPorts)) {
-            for(var i in container.randomPorts) {
-                var extPort = await(getRandomOpenPort(config.minPort + runningContainers, config.maxPort)),
-                    port = container.randomPorts[i] + "/tcp";
+        if (container.randomPorts != undefined && Array.isArray(container.randomPorts)) {
+            var j = 0;
+            for (var i in container.randomPorts) {
+                var randomPort = await(portastic.find({
+                    min: config.minPort + runningContainers + parseInt(i),
+                    max: config.maxPort,
+                    retrieve: 1
+                }));
+                console.log(randomPort);
+                console.log(i);
 
+                var port = container.randomPorts[i] + "/tcp";
                 containerConfig.PortBindings[port] = [{
-                  HostIp: "0.0.0.0",
-                  HostPort: extPort.toString()
+                    HostIp: "0.0.0.0",
+                    HostPort: randomPort.toString()
                 }];
-                containerConfig.ExposedPorts[extPort.toString() + "/tcp"] = {};
-
-                containerConfig.Env.push("RANDOM_PORT" + i + "=" + extPort);
+                containerConfig.ExposedPorts[randomPort.toString() + "/tcp"] = {};
+                containerConfig.Env.push("RANDOM_PORT_" + container.randomPorts[i] + "=" + randomPort);
+                // console.log(containerConfig);
             }
         }
     });
-
-    function getRandomOpenPort(minPort, maxPort) {
-        return new Promise(function (resolve, reject) {
-            var host = "127.0.0.1";
-
-            if(fs.existsSync('/.dockerenv')) {
-                network.get_gateway_ip(function(err, ip) {
-                    if(err) {
-                        throw new Error("Couldn't get gateway ip: " + err);
-                    }
-                    portscanner.findAPortNotInUse(minPort, maxPort, host, callback);
-                });
-            } else {
-                portscanner.findAPortNotInUse(minPort, maxPort, host, callback);
-            }
-
-            function callback(err, port) {
-                if(err) {
-                    return reject(err);
-                }
-
-                resolve(port);
-            }
-        });
-    }
 });
 
 assignRandomPortPlugin.pluginName = "assignRandomPort";

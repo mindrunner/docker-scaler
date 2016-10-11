@@ -7,18 +7,18 @@ const async = require('asyncawait/async'),
     logger = helper.Logger.getInstance(),
     docker = helper.Docker.getInstance();
 
-var volumesFrom = async(function(scaler) {
-    scaler.hooks.beforeCreate.push(function(config, args) {
+var volumesFrom = async(function (scaler) {
+    scaler.hooks.beforeCreate.push(function (config, args) {
         var container = args[1],
             containerConfig = args[2];
 
-        for(var i in container.volumes_from) {
+        for (var i in container.volumes_from) {
             var volumesFrom = container.volumes_from[i].split(":"),
                 containerName = volumesFrom[0],
                 fsMode = volumesFrom[1] || "rw";
 
             container = await(scaler.getContainerByName(containerName));
-            if(container == null) {
+            if (container == null) {
                 logger.error("Didn't found container %s.", containerName);
                 continue;
             }
