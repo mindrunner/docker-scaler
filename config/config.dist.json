@@ -4,7 +4,9 @@
     {
       "image": "nginx:latest",
       "instances": 5,
-      "volumes": ["/tmp/:/var/www/"]
+      "volumes": [
+        "/tmp/:/var/www/"
+      ]
     },
     {
       "image": "httpd:latest",

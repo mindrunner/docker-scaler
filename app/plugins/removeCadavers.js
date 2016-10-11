@@ -20,12 +20,12 @@ removeCadavers = function (scaler) {
     };
     scaler.config = Object.assign(defaultConfig, scaler.config);
 
-    var checkCadavers = async(function() {
+    var checkCadavers = async(function () {
         logger.debug("Searching cadavers...");
 
         var exitedContainers = await(getCadavers());
 
-        for(var i in exitedContainers) {
+        for (var i in exitedContainers) {
             var container = exitedContainers[i];
 
             scaler.removeContainer(container.Id);
@@ -37,8 +37,8 @@ removeCadavers = function (scaler) {
         }, scaler.config.removeCadavers.checkInterval * 1000);
     });
 
-    var getCadavers = function() {
-        return new Promise(function(resolve, reject) {
+    var getCadavers = function () {
+        return new Promise(function (resolve, reject) {
             var listOpts = {
                 all: true,
                 filters: {
@@ -46,14 +46,14 @@ removeCadavers = function (scaler) {
                     label: ['auto-deployed']
                 }
             };
-            docker.listContainers(listOpts, function(err, containers) {
-                if(err) {
+            docker.listContainers(listOpts, function (err, containers) {
+                if (err) {
                     return reject(err);
                 }
 
                 var result = [];
-                for(var i in containers) {
-                    if(containers[i].Labels['norestart'] != undefined) {
+                for (var i in containers) {
+                    if (containers[i].Labels['norestart'] != undefined) {
                         continue;
                     }
 
@@ -65,7 +65,7 @@ removeCadavers = function (scaler) {
         });
     };
 
-    if(scaler.config.removeCadavers.enabled) {
+    if (scaler.config.removeCadavers.enabled) {
         checkCadavers();
     }
 };
