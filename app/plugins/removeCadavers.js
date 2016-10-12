@@ -23,7 +23,8 @@ removeCadavers = function (scaler) {
     var checkCadavers = async(function() {
         logger.debug("Searching cadavers...");
 
-        var exitedContainers = await(getCadavers());
+        var exitedContainers = await(getNunRunningByState("exited"));
+        var createdContainers = await(getNunRunningByState("created"));
 
         for(var i in exitedContainers) {
             var container = exitedContainers[i];
@@ -32,17 +33,24 @@ removeCadavers = function (scaler) {
             logger.info("Removed exited container %s.", container.Id);
         }
 
+        for(var i in createdContainers) {
+            var container = createdContainers[i];
+
+            scaler.removeContainer(container.Id);
+            logger.info("Removed created container %s.", container.Id);
+        }
+
         helper.Timer.add(function () {
             checkCadavers()
         }, scaler.config.removeCadavers.checkInterval * 1000);
     });
 
-    var getCadavers = function() {
+    var getNunRunningByState = function(state) {
         return new Promise(function(resolve, reject) {
             var listOpts = {
                 all: true,
                 filters: {
-                    status: ["exited"],
+                    status: [state],
                     label: ['auto-deployed']
                 }
             };
