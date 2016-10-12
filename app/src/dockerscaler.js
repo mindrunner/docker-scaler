@@ -118,9 +118,17 @@ class DockerScaler {
 
         try {
             var newContainer = await(createContainer());
+        } catch(err) {
+            logger.error("Couldn't create %s. Will try in next cycle. Error: %s", container.image, err);
+            return;
+        }
+
+        try {
             await(startContainer(newContainer));
         } catch(err) {
             logger.error("Couldn't start %s. Will try in next cycle. Error: %s", container.image, err);
+            this.removeContainer(newContainer.Id);
+            return;
         }
 
         // subfunctions
@@ -166,11 +174,12 @@ class DockerScaler {
                 Image: container.image,
                 name: container.name || self.generateName(container.image) + "-" + self.generateId(8),
                 Labels: {'auto-deployed': 'true'},
-                Binds: container.volumes,
                 Env: container.env,
                 PortBindings: {},
                 ExposedPorts: {},
                 Privileged: container.privileged || false,
+                Binds: [],
+                Volumes: {},
                 VolumesFrom: []
             };
 

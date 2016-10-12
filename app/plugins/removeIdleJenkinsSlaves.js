@@ -26,7 +26,7 @@ removeIdleJenkinsSlaves = function (scaler) {
 
     scaler.config = Object.assign(defaultConfig, scaler.config);
 
-    var checkSlaves = async(function() {
+    var checkSlaves = async(function () {
         checkAge();
         checkIdles();
 
@@ -35,24 +35,24 @@ removeIdleJenkinsSlaves = function (scaler) {
         }, scaler.config.removeIdleJenkinsSlaves.checkInterval * 1000);
     });
 
-    var checkAge = function() {
+    var checkAge = function () {
         logger.debug("Checking slaves states...");
         try {
             var nodes = await(getNodes());
             logger.info("Found %d containers.", nodes.length);
 
-            for(var i in nodes) {
+            for (var i in nodes) {
                 var nodeId = nodes[i];
                 var container = await(findContainer(nodeId));
 
-                if(container == null) {
+                if (container == null) {
                     logger.debug("Container %s is not running on this host... continue...", nodeId);
                     continue;
                 }
 
                 logger.debug("Container %s (%s) is running on this host... checking...", container.Id, nodeId);
                 var age = Math.floor(Date.now() / 1000) - container.Created;
-                if(age < scaler.config.removeIdleJenkinsSlaves.maxAge) {
+                if (age < scaler.config.removeIdleJenkinsSlaves.maxAge) {
                     logger.debug("Container %s (Age: %ds) is young enough. Won't kill.", container.Id, age);
                     continue;
                 }
@@ -60,22 +60,22 @@ removeIdleJenkinsSlaves = function (scaler) {
                 await(setOldNodeOffline(nodeId));
                 logger.info("Container %s (Age: %ds) was to old. Set offline.", container.Id, age);
             }
-        } catch(err) {
+        } catch (err) {
             logger.error(err);
         }
     };
 
-    var checkIdles = function() {
+    var checkIdles = function () {
         logger.debug("Checking idle slaves...");
         try {
             var idleNodes = await(getIdles());
             logger.info("Found %d idle containers.", idleNodes.length);
 
-            for(var i in idleNodes) {
+            for (var i in idleNodes) {
                 var idleNodeId = idleNodes[i];
                 var container = await(findContainer(idleNodeId));
 
-                if(container == null) {
+                if (container == null) {
                     logger.debug("Idle container %s is not running on this host... continue...", idleNodeId);
                     continue;
                 }
@@ -83,34 +83,34 @@ removeIdleJenkinsSlaves = function (scaler) {
                 logger.debug("Idle container %s (%s) is running on this host... Killing...", container.Id, idleNodeId);
                 var containerInfo = await(scaler.inspectContainer(container.Id));
                 await(removeIdleHostFromJenkins(idleNodeId));
-                if(containerInfo.State.Running) {
+                if (containerInfo.State.Running) {
                     await(scaler.killContainer(container.Id));
                 }
                 await(scaler.removeContainer(container.Id));
                 logger.info("Removed idle container %s.", container.Id)
             }
-        } catch(err) {
+        } catch (err) {
             logger.error(err);
         }
     };
 
-    var findContainer = function(id) {
-        return new Promise(function(resolve, reject) {
+    var findContainer = function (id) {
+        return new Promise(function (resolve, reject) {
             var listOpts = {
                 all: true,
                 filters: {
                     label: ['auto-deployed']
                 }
             };
-            docker.listContainers(listOpts, function(err, containers) {
-                if(err) {
+            docker.listContainers(listOpts, function (err, containers) {
+                if (err) {
                     return reject(err);
                 }
-                for(var i in containers) {
+                for (var i in containers) {
                     var container = containers[i],
                         containerId = container.Names[0].slice(-8);
 
-                    if(containerId.trim() == id.trim()) {
+                    if (containerId.trim() == id.trim()) {
                         return resolve(container);
                     }
                 }
@@ -120,8 +120,8 @@ removeIdleJenkinsSlaves = function (scaler) {
         });
     };
 
-    var getIdles = function() {
-        return new Promise(function(resolve, reject) {
+    var getIdles = function () {
+        return new Promise(function (resolve, reject) {
             request({
                 url: scaler.config.removeIdleJenkinsSlaves.jenkinsMaster + "/scriptText", //URL to hit
                 method: 'POST',
@@ -132,18 +132,18 @@ removeIdleJenkinsSlaves = function (scaler) {
                     user: scaler.config.removeIdleJenkinsSlaves.username,
                     pass: scaler.config.removeIdleJenkinsSlaves.password
                 }
-            }, function(error, response, body){
-                if(error) {
+            }, function (error, response, body) {
+                if (error) {
                     return reject(error);
                 }
 
                 var serverList = body.trim().split("\n");
-                if(serverList.length == 0) {
+                if (serverList.length == 0) {
                     return reject("Didn't get any server from API");
                 }
 
-                for(var i in serverList) {
-                    if(serverList[i].length != 8) {
+                for (var i in serverList) {
+                    if (serverList[i].length != 8) {
                         return reject("Got error from server:\n" + body);
                     }
                 }
@@ -154,8 +154,8 @@ removeIdleJenkinsSlaves = function (scaler) {
         });
     };
 
-    var getNodes = function() {
-        return new Promise(function(resolve, reject) {
+    var getNodes = function () {
+        return new Promise(function (resolve, reject) {
             request({
                 url: scaler.config.removeIdleJenkinsSlaves.jenkinsMaster + "/scriptText", //URL to hit
                 method: 'POST',
@@ -166,18 +166,18 @@ removeIdleJenkinsSlaves = function (scaler) {
                     user: scaler.config.removeIdleJenkinsSlaves.username,
                     pass: scaler.config.removeIdleJenkinsSlaves.password
                 }
-            }, function(error, response, body){
-                if(error) {
+            }, function (error, response, body) {
+                if (error) {
                     return reject(error);
                 }
 
                 var serverList = body.trim().split("\n");
-                if(serverList.length == 0) {
+                if (serverList.length == 0) {
                     return reject("Didn't get any server from API");
                 }
 
-                for(var i in serverList) {
-                    if(serverList[i].length != 8) {
+                for (var i in serverList) {
+                    if (serverList[i].length != 8) {
                         return reject("Got error from server:\n" + body);
                     }
                 }
@@ -187,8 +187,8 @@ removeIdleJenkinsSlaves = function (scaler) {
         });
     };
 
-    var removeIdleHostFromJenkins = function(nodeId) {
-        return new Promise(function(resolve, reject) {
+    var removeIdleHostFromJenkins = function (nodeId) {
+        return new Promise(function (resolve, reject) {
             request({
                 url: scaler.config.removeIdleJenkinsSlaves.jenkinsMaster + "/scriptText", //URL to hit
                 method: 'POST',
@@ -199,8 +199,8 @@ removeIdleJenkinsSlaves = function (scaler) {
                     user: scaler.config.removeIdleJenkinsSlaves.username,
                     pass: scaler.config.removeIdleJenkinsSlaves.password
                 }
-            }, function(error, response, body){
-                if(error) {
+            }, function (error, response, body) {
+                if (error) {
                     return reject(error);
                 }
 
@@ -210,7 +210,7 @@ removeIdleJenkinsSlaves = function (scaler) {
         });
     };
 
-    var getIdleSlavesJenkinsScript = function() {
+    var getIdleSlavesJenkinsScript = function () {
         return `import hudson.FilePath
 import hudson.model.Node
 import hudson.model.Slave
@@ -234,8 +234,8 @@ for(Node node in jenkinsNodes)
 }`;
     };
 
-    var setOldNodeOffline = function(nodeId) {
-        return new Promise(function(resolve, reject) {
+    var setOldNodeOffline = function (nodeId) {
+        return new Promise(function (resolve, reject) {
             request({
                 url: scaler.config.removeIdleJenkinsSlaves.jenkinsMaster + "/scriptText", //URL to hit
                 method: 'POST',
@@ -246,8 +246,8 @@ for(Node node in jenkinsNodes)
                     user: scaler.config.removeIdleJenkinsSlaves.username,
                     pass: scaler.config.removeIdleJenkinsSlaves.password
                 }
-            }, function(error, response, body){
-                if(error) {
+            }, function (error, response, body) {
+                if (error) {
                     return reject(error);
                 }
 
@@ -257,7 +257,7 @@ for(Node node in jenkinsNodes)
         });
     };
 
-    var setOldNodeOfflineJenkinsScript = function(nodeId) {
+    var setOldNodeOfflineJenkinsScript = function (nodeId) {
         return `import hudson.FilePath
 import hudson.model.Node
 import hudson.model.Slave
@@ -285,7 +285,7 @@ for (Node node in jenkinsNodes)
 }`;
     };
 
-    var removeIdleHostFromJenkinsScript = function(nodeId) {
+    var removeIdleHostFromJenkinsScript = function (nodeId) {
         return `import hudson.FilePath
 import hudson.model.Node
 import hudson.model.Slave
@@ -313,7 +313,7 @@ for (Node node in jenkinsNodes)
 }`;
     };
 
-    var getAllNodesJenkinsScript = function() {
+    var getAllNodesJenkinsScript = function () {
         return `import hudson.FilePath
 import hudson.model.Node
 import hudson.model.Slave
@@ -333,7 +333,7 @@ for (Node node in jenkinsNodes)
 }`;
     };
 
-    if(scaler.config.removeIdleJenkinsSlaves.enabled) {
+    if (scaler.config.removeIdleJenkinsSlaves.enabled) {
         //checkIdleSlaves();
         checkSlaves();
     }
