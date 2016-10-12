@@ -342,7 +342,6 @@ for (Node node in jenkinsNodes)
     };
 
     if (scaler.config.removeIdleJenkinsSlaves.enabled) {
-        //checkIdleSlaves();
         checkSlaves();
     }
 };

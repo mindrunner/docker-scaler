@@ -18,7 +18,7 @@ var assignRandomPortPlugin = async(function (scaler) {
                 max: config.maxPort,
                 retrieve: 1
             }));
-            console.log(randomPort);
+
             containerConfig.PortBindings[randomPort + "/tcp"] = [{
                 HostIp: "0.0.0.0",
                 HostPort: randomPort.toString()
@@ -35,8 +35,6 @@ var assignRandomPortPlugin = async(function (scaler) {
                     max: config.maxPort,
                     retrieve: 1
                 }));
-                console.log(randomPort);
-                console.log(i);
 
                 var port = container.randomPorts[i] + "/tcp";
                 containerConfig.PortBindings[port] = [{
@@ -45,7 +43,6 @@ var assignRandomPortPlugin = async(function (scaler) {
                 }];
                 containerConfig.ExposedPorts[randomPort.toString() + "/tcp"] = {};
                 containerConfig.Env.push("RANDOM_PORT_" + container.randomPorts[i] + "=" + randomPort);
-                // console.log(containerConfig);
             }
         }
     });
