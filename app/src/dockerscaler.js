@@ -127,7 +127,7 @@ class DockerScaler {
             await(startContainer(newContainer));
         } catch(err) {
             logger.error("Couldn't start %s. Will try in next cycle. Error: %s", container.image, err);
-            this.removeContainer(newContainer.Id);
+            await(this.removeContainer(newContainer.Id));
             return;
         }
 
