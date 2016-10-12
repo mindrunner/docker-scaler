@@ -143,7 +143,11 @@ removeIdleJenkinsSlaves = function (scaler) {
                 }
 
                 for (var i in serverList) {
-                    if (serverList[i].length != 8) {
+                    var server = serverList[i].trim();
+                    if (server.length == 0) {
+                        continue;
+                    }
+                    if (server.length != 8) {
                         return reject("Got error from server:\n" + body);
                     }
                 }
