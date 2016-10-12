@@ -23,21 +23,22 @@ removeCadavers = function (scaler) {
     var checkCadavers = async(function() {
         logger.debug("Searching cadavers...");
 
-        var exitedContainers = await(getNunRunningByState("exited"));
-        var createdContainers = await(getNunRunningByState("created"));
+        var cadavers = []
+            .concat(await(getNonRunningByState('created')))
+            .concat(await(getNonRunningByState('exited')))
+            .concat(await(getNonRunningByState('dead')));
 
-        for(var i in exitedContainers) {
-            var container = exitedContainers[i];
+        cadavers = uniqueArray(cadavers);
 
-            scaler.removeContainer(container.Id);
-            logger.info("Removed exited container %s.", container.Id);
-        }
+        for(var i in cadavers) {
+            var container = cadavers[i];
 
-        for(var i in createdContainers) {
-            var container = createdContainers[i];
-
-            scaler.removeContainer(container.Id);
-            logger.info("Removed created container %s.", container.Id);
+            try {
+                scaler.removeContainer(container.Id);
+                logger.info("Removed exited container %s.", container.Id);
+            } catch(err) {
+                logger.error("Couldn't remove container %s: %s", container.Id, err);
+            }
         }
 
         helper.Timer.add(function () {
@@ -45,7 +46,7 @@ removeCadavers = function (scaler) {
         }, scaler.config.removeCadavers.checkInterval * 1000);
     });
 
-    var getNunRunningByState = function(state) {
+    var getNonRunningByState = function(state) {
         return new Promise(function(resolve, reject) {
             var listOpts = {
                 all: true,
@@ -71,6 +72,12 @@ removeCadavers = function (scaler) {
                 resolve(result);
             });
         });
+    };
+
+    var uniqueArray = function(xs) {
+        return xs.filter(function(x, i) {
+            return xs.indexOf(x) === i
+        })
     };
 
     if(scaler.config.removeCadavers.enabled) {
