@@ -16,12 +16,16 @@ var volumes = async(function (scaler) {
         for(var i in container.volumes) {
             var volume = container.volumes[i].split(":"),
                 volumeFrom = volume[0],
-                volumeTo = volume[1];
+                volumeTo = volume[1] || null;
 
             fsMode = volume[2] || "rw";
 
-            containerConfig.Volumes[volumeTo] = {};
-            containerConfig.Binds.push(volumeFrom + ":" + volumeTo + ":" + fsMode);
+            if(volumeTo != null) {
+                containerConfig.Volumes[volumeTo] = {};
+                containerConfig.Binds.push(volumeFrom + ":" + volumeTo + ":" + fsMode);
+            } else {
+                containerConfig.Volumes[volumeFrom] = {};
+            }
         }
 
         for(i in container.volumes_from) {
