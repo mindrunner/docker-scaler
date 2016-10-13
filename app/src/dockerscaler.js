@@ -47,7 +47,8 @@ class DockerScaler {
         };
 
         logger.level = this.config.logLevel;
-        cleanup.Cleanup(this.cleanup);
+        logger.debug(this.config);
+        cleanup.Cleanup(this.config);
     }
 
     init() {

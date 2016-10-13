@@ -3,14 +3,14 @@
 const helper = require('./helper'),
     docker = helper.Docker.getInstance(),
     logger = helper.Logger.getInstance();
+var config = undefined;
 
-exports.Cleanup = function Cleanup() {
+exports.Cleanup = function Cleanup(conf) {
+    config = conf;
     process.on('cleanup', function () {
         logger.info('Cleaning up...');
-
         helper.Timer.clearAll();
-
-        if(process.env.CLEANUP && process.env.CLEANUP == "true") {
+        if ((process.env.CLEANUP && process.env.CLEANUP == "true") || config.cleanup == true) {
             var listOpts = {
                 all: true,
                 filters: {
