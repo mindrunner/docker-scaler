@@ -36,7 +36,8 @@ class DockerScaler {
             env: [],
             ports: [],
             restart: true,
-            volumes_from: []
+            volumes_from: [],
+            custom_id: null
         };
 
         this.config = Object.assign(this.defaultConfig, config);
@@ -71,7 +72,12 @@ class DockerScaler {
         var self = this;
 
         return new Promise(function(resolve, reject) {
-            var runningContainers = await(self.getContainersByImage(container.image));
+            var runningContainers;
+            if(container.custom_id != undefined || container.custom_id != null) {
+                runningContainers = await(self.getContainerByCustomId(container.custom_id));
+            } else {
+                runningContainers = await(self.getContainersByImage(container.image));
+            }
 
             if(container.name != undefined) {
                 container.instances = 1; //only allow 1 container.
@@ -187,6 +193,10 @@ class DockerScaler {
                 VolumesFrom: []
             };
 
+            if(container.custom_id != undefined || container.custom_id != null) {
+                containerConfig.Labels['custom-id'] = container.custom_id;
+            }
+
             if(!container.restart) {
                 containerConfig.Labels['norestart'] = 'true';
             }
@@ -243,6 +253,37 @@ class DockerScaler {
                         (container.Labels['source-image'] != undefined && container.Labels['source-image'] == image)
                         || container.Image == image
                     ) {
+                        containerList.push(container);
+                    }
+                }
+
+                resolve(containerList);
+            });
+        });
+    }
+
+    getContainerByCustomId(id) {
+        logger.debug('Searching containers with custom id %s', id);
+
+        // Only search for auto-deployed containers
+        var listOpts = {
+            filters: {
+                status: ['running'],
+                label: ['auto-deployed']
+            }
+        };
+
+        return new Promise(function(resolve, reject) {
+            docker.listContainers(listOpts, function (err, containers) {
+                if(err) {
+                    return reject(err);
+                }
+
+                var containerList = [];
+                for (var i in containers) {
+                    var container = containers[i];
+
+                    if (container.Labels['custom-id'] != undefined && container.Labels['custom-id'] == id) {
                         containerList.push(container);
                     }
                 }
