@@ -174,7 +174,10 @@ class DockerScaler {
             var containerConfig = {
                 Image: container.image,
                 name: container.name || self.generateName(container.image) + "-" + self.generateId(8),
-                Labels: {'auto-deployed': 'true'},
+                Labels: {
+                    'auto-deployed': 'true',
+                    'source-image': container.image
+                },
                 Env: container.env,
                 PortBindings: {},
                 ExposedPorts: {},
@@ -236,7 +239,10 @@ class DockerScaler {
                 for (var i in containers) {
                     var container = containers[i];
 
-                    if (container.Image == image) {
+                    if (
+                        (container.Labels['source-image'] != undefined && container.Labels['source-image'] == image)
+                        || container.Image == image
+                    ) {
                         containerList.push(container);
                     }
                 }
