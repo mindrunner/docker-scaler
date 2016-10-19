@@ -259,17 +259,21 @@ class DockerScaler {
     }
 
     getContainerByGroupId(id) {
-        logger.debug('Searching containers with id %s', id);
-
-        // Only search for auto-deployed containers
-        var listOpts = {
-            filters: {
-                status: ['running'],
-                label: ['auto-deployed']
-            }
-        };
-
         return new Promise(function(resolve, reject) {
+            if(id == undefined || id == null) {
+                return reject("You need an id.");
+            }
+
+            logger.debug('Searching containers with id %s', id);
+
+            // Only search for auto-deployed containers
+            var listOpts = {
+                filters: {
+                    status: ['running'],
+                    label: ['auto-deployed']
+                }
+            };
+
             docker.listContainers(listOpts, function (err, containers) {
                 if(err) {
                     return reject(err);
