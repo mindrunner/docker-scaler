@@ -37,7 +37,7 @@ class DockerScaler {
             ports: [],
             restart: true,
             volumes_from: [],
-            custom_id: null
+            id: null
         };
 
         this.config = Object.assign(this.defaultConfig, config);
@@ -72,12 +72,7 @@ class DockerScaler {
         var self = this;
 
         return new Promise(function(resolve, reject) {
-            var runningContainers;
-            if(container.custom_id != undefined || container.custom_id != null) {
-                runningContainers = await(self.getContainerByCustomId(container.custom_id));
-            } else {
-                runningContainers = await(self.getContainersByImage(container.image));
-            }
+            var runningContainers = await(self.getContainerByGroupId(container.id));
 
             if(container.name != undefined) {
                 container.instances = 1; //only allow 1 container.
@@ -177,31 +172,32 @@ class DockerScaler {
         }
 
         function createContainer() {
-            var containerConfig = {
-                Image: container.image,
-                name: container.name || self.generateName(container.image) + "-" + self.generateId(8),
-                Labels: {
-                    'auto-deployed': 'true',
-                    'source-image': container.image
-                },
-                Env: container.env,
-                PortBindings: {},
-                ExposedPorts: {},
-                Privileged: container.privileged || false,
-                Binds: [],
-                Volumes: {},
-                VolumesFrom: []
-            };
-
-            if(container.custom_id != undefined || container.custom_id != null) {
-                containerConfig.Labels['custom-id'] = container.custom_id;
-            }
-
-            if(!container.restart) {
-                containerConfig.Labels['norestart'] = 'true';
-            }
-
             return new Promise(function(resolve, reject) {
+                var containerConfig = {
+                    Image: container.image,
+                    name: container.name || self.generateName(container.image) + "-" + self.generateId(8),
+                    Labels: {
+                        'auto-deployed': 'true',
+                        'source-image': container.image,
+                        'group-id': container.id
+                    },
+                    Env: container.env,
+                    PortBindings: {},
+                    ExposedPorts: {},
+                    Privileged: container.privileged || false,
+                    Binds: [],
+                    Volumes: {},
+                    VolumesFrom: []
+                };
+
+                if(container.id == undefined || container.id == null) {
+                    return reject("Your container needs an id.");
+                }
+
+                if(!container.restart) {
+                    containerConfig.Labels['norestart'] = 'true';
+                }
+
                 self.runHook('beforeCreate', container, containerConfig);
                 self.runHook('beforeCreateLate', container, containerConfig);
 
@@ -262,8 +258,8 @@ class DockerScaler {
         });
     }
 
-    getContainerByCustomId(id) {
-        logger.debug('Searching containers with custom id %s', id);
+    getContainerByGroupId(id) {
+        logger.debug('Searching containers with id %s', id);
 
         // Only search for auto-deployed containers
         var listOpts = {
@@ -283,7 +279,7 @@ class DockerScaler {
                 for (var i in containers) {
                     var container = containers[i];
 
-                    if (container.Labels['custom-id'] != undefined && container.Labels['custom-id'] == id) {
+                    if (container.Labels['group-id'] != undefined && container.Labels['group-id'] == id) {
                         containerList.push(container);
                     }
                 }
