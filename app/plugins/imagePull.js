@@ -8,7 +8,6 @@ const async = require('asyncawait/async'),
     docker = helper.Docker.getInstance();
 
 var imagePull = async(function (scaler) {
-
     for(var i in scaler.config.containers) {
         var containerConfig = scaler.config.containers[i];
 
@@ -54,7 +53,7 @@ var imagePull = async(function (scaler) {
 
             helper.Timer.add(async(function () {
                 await(pullImage(image));
-            }), self.config.pullInterval * 1000);
+            }), scaler.config.pullInterval * 1000);
         });
     }
 });
