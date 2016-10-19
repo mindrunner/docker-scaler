@@ -110,18 +110,10 @@ class DockerScaler {
         container = JSON.parse(JSON.stringify(container)); // copy variable to stop referencing
 
         logger.info('Starting instance of %s.', container.image);
-        if(container.pull) {
-            try{
-                await(pullContainer());
-            } catch(err) {
-                logger.error("Couldn't pull %s. Trying to start it anyway. Error: %s", container.image, err);
-            }
-        }
-
         try {
             var newContainer = await(createContainer());
         } catch(err) {
-            logger.error("Couldn't create %s. Will try in next cycle. Error: %s", container.image, err);
+            logger.warn("Couldn't create %s. Will try in next cycle. Error: %s", container.image, err);
             return;
         }
 
@@ -134,43 +126,6 @@ class DockerScaler {
         }
 
         // subfunctions
-        function pullContainer() {
-            var pullOpts = {};
-
-            if(self.config.auth != {}) {
-                pullOpts.authconfig = self.config.auth;
-            }
-
-            logger.info("Pulling %s...",container.image);
-            return new Promise(function(resolve, reject) {
-                docker.pull(container.image, pullOpts, function (err, stream) {
-                    docker.modem.followProgress(stream, onFinished, onProgress);
-
-                    function onFinished(err, output) {
-                        if(err) {
-                            logger.error("Error pulling %s: %s", container.image, err);
-                            return reject(err);
-                        }
-                        logger.info("Successfully pulled %s.",container.image);
-                        resolve();
-                    }
-
-                    function onProgress(event) {
-                        if(event.progressDetail != undefined
-                            && event.progressDetail.current != undefined
-                            && event.progressDetail.total != undefined) {
-                            var percent = Math.round(100 / event.progressDetail.total * event.progressDetail.current);
-                            logger.debug('%s: %s (%d%)', event.id, event.status, percent);
-                        } else if(event.id != undefined) {
-                            logger.debug('%s: %s', event.id, event.status);
-                        } else {
-                            logger.debug('%s', event.status);
-                        }
-                    }
-                })
-            });
-        }
-
         function createContainer() {
             return new Promise(function(resolve, reject) {
                 var containerConfig = {
