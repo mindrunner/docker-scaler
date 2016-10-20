@@ -38,7 +38,7 @@ class DockerScaler {
             env: [],
             ports: [],
             restart: true,
-            volumes_from: [],
+            volumesFrom: [],
             isDataContainer: false
         };
 
@@ -121,7 +121,7 @@ class DockerScaler {
         return new Promise(function(resolve, reject) {
             var containerConfig = {
                 Image: container.image,
-                name: container.name || self.generateName(container.image) + "-" + self.generateId(8),
+                name: container.name || container.id + "-" + self.generateId(8),
                 Labels: {
                     'auto-deployed': 'true',
                     'source-image': container.image,
@@ -352,13 +352,6 @@ class DockerScaler {
         for(var i in this.hooks[hook]) {
             this.hooks[hook][i](this.config, args);
         }
-    }
-
-    generateName(imageName) {
-        var newName = imageName.split("/").pop().replace('jenkins','').replace('slave','');
-        newName = newName.toLowerCase().replace('-','').replace(':', '-').replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-
-        return this.trim(newName);
     }
 
     trim(str) {

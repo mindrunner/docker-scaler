@@ -29,8 +29,8 @@ var volumes = async(function (scaler) {
             }
         }
 
-        for(i in container.volumes_from) {
-            var volumesFrom = container.volumes_from[i].split(":"),
+        for(i in container.volumesFrom) {
+            var volumesFrom = container.volumesFrom[i].split(":"),
                 containerName = volumesFrom[0];
 
             fsMode = volumesFrom[1] || "rw";
