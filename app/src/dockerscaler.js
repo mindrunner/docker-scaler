@@ -38,7 +38,7 @@ class DockerScaler {
             ports: [],
             restart: true,
             volumes_from: [],
-            id: null
+            isDataContainer: false
         };
 
         this.config = Object.assign(this.defaultConfig, config);
@@ -63,6 +63,7 @@ class DockerScaler {
                 var defaultConfig = JSON.parse(JSON.stringify(self.defaultContainerConfig)), // copy the variables, otherwise they are referenced
                     container = JSON.parse(JSON.stringify(self.config.containers[i]));
                 container = Object.assign(defaultConfig, container); // merge default config with
+                container.id = i;
 
                 await(self.spawnContainer(container));
             }
