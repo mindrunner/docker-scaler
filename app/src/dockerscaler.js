@@ -134,10 +134,6 @@ class DockerScaler {
                 VolumesFrom: []
             };
 
-            if(container.id == undefined || container.id == null) {
-                return reject("Your container needs an id.");
-            }
-
             if(!container.restart) {
                 containerConfig.Labels['norestart'] = 'true';
             }
