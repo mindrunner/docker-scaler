@@ -7,12 +7,22 @@ const async = require('asyncawait/async'),
     logger = helper.Logger.getInstance(),
     docker = helper.Docker.getInstance();
 
-var imagePull = async(function (scaler) {
+var imagePull = function (scaler) {
     for(var i in scaler.config.containers) {
         var containerConfig = scaler.config.containers[i];
 
         if(containerConfig.pull) {
-            pullImage(containerConfig.image);
+            pullImage(containerConfig.image).then(function (image) {
+                logger.info("Successfully pulled %s.", image);
+                return image;
+            }).catch(function(image, err) {
+                logger.error("Error pulling %s: %s", image, err);
+                return image;
+            }).then(function(image) {
+                helper.Timer.add(function () {
+                    pullImage(image);
+                }, scaler.config.pullInterval * 1000);
+            });
         }
     }
 
@@ -30,11 +40,9 @@ var imagePull = async(function (scaler) {
 
                 function onFinished(err, output) {
                     if(err) {
-                        logger.error("Error pulling %s: %s", image, err);
-                        return reject(err);
+                        return reject(image, err);
                     }
-                    logger.info("Successfully pulled %s.", image);
-                    resolve();
+                    resolve(image);
                 }
 
                 function onProgress(event) {
@@ -50,13 +58,9 @@ var imagePull = async(function (scaler) {
                     }
                 }
             });
-
-            helper.Timer.add(async(function () {
-                await(pullImage(image));
-            }), scaler.config.pullInterval * 1000);
         });
     }
-});
+};
 
 imagePull.pluginName = "imagePull";
 
