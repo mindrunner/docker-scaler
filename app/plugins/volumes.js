@@ -31,13 +31,13 @@ var volumes = async(function (scaler) {
 
         for(i in container.volumesFrom) {
             var volumesFrom = container.volumesFrom[i].split(":"),
-                containerName = volumesFrom[0];
+                groupId = volumesFrom[0];
 
             fsMode = volumesFrom[1] || "rw";
 
-            var sourceContainer = await(scaler.getContainerByName(containerName));
+            var sourceContainer = await(scaler.getNewestContainerByGroupId(groupId));
             if(sourceContainer == null) {
-                throw new hookException("Didn't found container " + containerName);
+                throw new hookException("Didn't found data container " + groupId);
             }
 
             for(var j in sourceContainer.Mounts) {

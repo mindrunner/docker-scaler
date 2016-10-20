@@ -61,11 +61,15 @@ class DockerScaler {
             container = Object.assign(defaultConfig, container); // merge default config with
             container.id = i;
 
-            this.spawnContainer(container);
+            if(container.isDataContainer) {
+                this.spawnDataContainer(container);
+            } else {
+                this.spawnWorkerContainer(container);
+            }
         }
     }
 
-    spawnContainer(container) {
+    spawnWorkerContainer(container) {
         var self = this;
 
         this.getContainerByGroupId(container.id).then(async(function(runningContainers) {
@@ -88,7 +92,44 @@ class DockerScaler {
         }).then(function() {
             if(container.restart) {
                 helper.Timer.add(async(function () {
-                    await(self.spawnContainer(container));
+                    await(self.spawnWorkerContainer(container));
+                }), self.config.scaleInterval * 1000);
+            }
+        });
+    }
+
+    spawnDataContainer(container) {
+        var self = this;
+
+        // add latest tag if no tag is there
+        if(container.image.split(':').length < 2) {
+            container.image += ":latest";
+        }
+
+        this.getContainersByImage(container.image).then(function(existingContainers) {
+            self.getNewestImageByRepoTag(container.image).then(async(function(newestImage) {
+                var hasNewestImage = false;
+
+                for(var i in existingContainers) {
+                    var existingContainer = existingContainers[i];
+
+                    if(existingContainer.ImageID == newestImage.Id) {
+                        hasNewestImage = true
+                    }
+                }
+
+                if (!hasNewestImage) {
+                    await(self.runContainer(container));
+                }
+            })).catch(function(err) {
+                logger.error("Couldn't get images: %s", err);
+            });
+        }).catch(function(err) {
+            logger.error("Couldn't count running containers: %s", err);
+        }).then(function() {
+            if(container.restart) {
+                helper.Timer.add(async(function () {
+                    await(self.spawnDataContainer(container));
                 }), self.config.scaleInterval * 1000);
             }
         });
@@ -180,8 +221,8 @@ class DockerScaler {
 
         // Only search for auto-deployed containers
         var listOpts = {
+            all: true,
             filters: {
-                status: ['running'],
                 label: ['auto-deployed']
             }
         };
@@ -196,10 +237,7 @@ class DockerScaler {
                 for (var i in containers) {
                     var container = containers[i];
 
-                    if (
-                        (container.Labels['source-image'] != undefined && container.Labels['source-image'] == image)
-                        || container.Image == image
-                    ) {
+                    if (container.Labels['source-image'] == image) {
                         containerList.push(container);
                     }
                 }
@@ -240,6 +278,65 @@ class DockerScaler {
                 }
 
                 resolve(containerList);
+            });
+        });
+    }
+
+    getNewestImageByRepoTag(repoTag) {
+        return new Promise(function(resolve, reject) {
+            docker.listImages({},function(err, images) {
+                if(err) {
+                    return reject(err);
+                }
+
+                // Workaround for docker. They don't support filter by name.
+                var result = null;
+                for(var i in images) {
+                    var image = images[i];
+
+                    if(image.RepoTags.indexOf(repoTag) != -1) {
+                        if(result === null) {
+                            result = image;
+                        } else if(result.Created < image.Created) {
+                            result = image;
+                        }
+                    }
+                }
+
+                resolve(result);
+            });
+        });
+    }
+
+    getNewestContainerByGroupId(id) {
+        return new Promise(function(resolve, reject) {
+            var listOpts = {
+                all: true,
+                filters: {
+                    label: ['auto-deployed']
+                }
+            };
+
+            docker.listContainers(listOpts,function(err, containers) {
+                if(err) {
+                    return reject(err);
+                }
+
+                // Workaround for docker. They don't support filter by name.
+                var result = null;
+                for(var i in containers) {
+                    var container = containers[i];
+
+                    if(container.Labels['group-id'] != undefined && container.Labels['group-id'] == id) {
+                        if(result === null) {
+                            result = container;
+                        } else if(result.Created < container.Created) {
+                            result = container;
+                        }
+                    }
+                }
+
+                resolve(result);
             });
         });
     }
