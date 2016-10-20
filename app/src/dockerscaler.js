@@ -8,6 +8,7 @@ const fs = require('fs'),
 
     cleanup = require('./cleanup'),
     helper = require('./helper'),
+    hookException = require('./exceptions/hookException'),
 
     logger = helper.Logger.getInstance(),
     docker = helper.Docker.getInstance();
@@ -83,7 +84,7 @@ class DockerScaler {
                 }
             }
         })).catch(function(err) {
-            logger.error("Couldn't count running containers: %e", err);
+            logger.error("Couldn't count running containers: %s", err);
         }).then(function() {
             if(container.restart) {
                 helper.Timer.add(async(function () {
@@ -102,12 +103,14 @@ class DockerScaler {
         return new Promise(function(resolve, reject) {
             self.createContainer(container).then(function(newContainer) {
                 self.startContainer(newContainer).then(function() {
-                    resolve();
+                    resolve(newContainer);
                 }).catch(function(err) {
                     logger.error("Couldn't start %s. Will try in next cycle. Error: %s", container.image, err);
+                    reject(err);
                 });
             }).catch(function(err) {
                 logger.warn("Couldn't create %s. Will try in next cycle. Error: %s", container.image, err);
+                reject(err);
             });
         });
     }
@@ -122,7 +125,8 @@ class DockerScaler {
                 Labels: {
                     'auto-deployed': 'true',
                     'source-image': container.image,
-                    'group-id': container.id
+                    'group-id': container.id,
+                    'data-container': container.isDataContainer.toString()
                 },
                 Env: container.env,
                 PortBindings: {},
@@ -137,8 +141,17 @@ class DockerScaler {
                 containerConfig.Labels['norestart'] = 'true';
             }
 
-            self.runHook('beforeCreate', container, containerConfig);
-            self.runHook('beforeCreateLate', container, containerConfig);
+            try {
+                self.runHook('beforeCreate', container, containerConfig);
+                self.runHook('beforeCreateLate', container, containerConfig);
+            } catch(err) {
+                if(err instanceof hookException) {
+                    return reject(err.message);
+                }
+
+                return reject(err);
+            }
+
 
             docker.createContainer(containerConfig, function(err, newContainer) {
                 if(err) {

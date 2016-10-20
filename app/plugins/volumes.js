@@ -4,8 +4,9 @@ const async = require('asyncawait/async'),
     await = require('asyncawait/await'),
 
     helper = require('../src/helper'),
-    logger = helper.Logger.getInstance(),
-    docker = helper.Docker.getInstance();
+    hookException = require('../src/exceptions/hookException'),
+
+    logger = helper.Logger.getInstance();
 
 var volumes = async(function (scaler) {
     scaler.hooks.beforeCreate.push(function (config, args) {
@@ -36,8 +37,7 @@ var volumes = async(function (scaler) {
 
             var sourceContainer = await(scaler.getContainerByName(containerName));
             if(sourceContainer == null) {
-                logger.error("Didn't found container %s.", containerName);
-                continue;
+                throw new hookException("Didn't found container " + containerName);
             }
 
             for(var j in sourceContainer.Mounts) {
