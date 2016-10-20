@@ -1,6 +1,7 @@
 # Scaler
 
 This docker container lets you spawn sibling containers and monitor them. It scales them up or down, depending on your configuration.
+Scaler has to run on each host where containers should be scaled; each host may have its individual configuration.
 
 ## Dependencies
 
@@ -20,6 +21,12 @@ The easiest way to use this piece of software is `docker-compose`.
 ### Without docker-compose
 
 You can also run scaler manually like this: `docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $PWD/config:/opt/docker-autoscale/config schweizerischebundesbahnen/docker-autoscale`
+
+### With wzu-docker:
+```
+vi /etc/wzu-docker/_scripts/init-compose/scaler-t-config/config/config.json
+sudo service scaler-t reinit
+```
 
 ## Configuration
 
