@@ -94,23 +94,22 @@ class DockerScaler {
     }
 
     runContainer(container) {
+        var self = this;
+
         container = JSON.parse(JSON.stringify(container)); // copy variable to stop referencing
-
         logger.info('Starting instance of %s.', container.image);
-        try {
-            var newContainer = await(this.createContainer(container));
-        } catch(err) {
-            logger.warn("Couldn't create %s. Will try in next cycle. Error: %s", container.image, err);
-            return;
-        }
 
-        try {
-            await(this.startContainer(newContainer));
-        } catch(err) {
-            logger.error("Couldn't start %s. Will try in next cycle. Error: %s", container.image, err);
-            this.removeContainer(newContainer.Id);
-            return;
-        }
+        return new Promise(function(resolve, reject) {
+            self.createContainer(container).then(function(newContainer) {
+                self.startContainer(newContainer).then(function() {
+                    resolve();
+                }).catch(function(err) {
+                    logger.error("Couldn't start %s. Will try in next cycle. Error: %s", container.image, err);
+                });
+            }).catch(function(err) {
+                logger.warn("Couldn't create %s. Will try in next cycle. Error: %s", container.image, err);
+            });
+        });
     }
 
     createContainer(container) {
