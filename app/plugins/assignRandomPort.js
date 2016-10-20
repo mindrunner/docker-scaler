@@ -23,10 +23,11 @@ var assignRandomPortPlugin = async(function (scaler) {
             for (var i in container.randomPorts) {
                 var irandomPort = Math.floor(Math.random() * (config.maxPort - config.minPort + 1) + config.minPort);
                 var port = container.randomPorts[i] + "/tcp";
-                containerConfig.PortBindings[port] = [{
+                containerConfig.PortBindings[port + "/tcp"] = [{
                     HostIp: "0.0.0.0",
                     HostPort: irandomPort.toString()
                 }];
+                containerConfig.ExposedPorts[port + "/tcp"] = {};
                 containerConfig.Env.push("RANDOM_PORT_" + container.randomPorts[i] + "=" + irandomPort);
             }
         }
