@@ -27,6 +27,7 @@ var assignRandomPortPlugin = async(function (scaler) {
                     HostIp: "0.0.0.0",
                     HostPort: irandomPort.toString()
                 }];
+                containerConfig.ExposedPorts[irandomPort.toString() + "/tcp"] = {};
                 containerConfig.Env.push("RANDOM_PORT_" + container.randomPorts[i] + "=" + irandomPort);
             }
         }
