@@ -54,34 +54,20 @@ class DockerScaler {
     }
 
     init() {
-        var self = this;
+        for (var i in this.config.containers) {
+            var defaultConfig = JSON.parse(JSON.stringify(this.defaultContainerConfig)), // copy the variables, otherwise they are referenced
+                container = JSON.parse(JSON.stringify(this.config.containers[i]));
+            container = Object.assign(defaultConfig, container); // merge default config with
+            container.id = i;
 
-        async(function() {
-            // Spawning the first time;
-
-            for (var i in self.config.containers) {
-                var defaultConfig = JSON.parse(JSON.stringify(self.defaultContainerConfig)), // copy the variables, otherwise they are referenced
-                    container = JSON.parse(JSON.stringify(self.config.containers[i]));
-                container = Object.assign(defaultConfig, container); // merge default config with
-                container.id = i;
-
-                await(self.spawnContainer(container));
-            }
-        })();
+            this.spawnContainer(container);
+        }
     }
 
     spawnContainer(container) {
         var self = this;
 
-        return new Promise(function(resolve, reject) {
-            var runningContainers = await(self.getContainerByGroupId(container.id));
-
-            if(container.name != undefined) {
-                container.instances = 1; //only allow 1 container.
-            } else {
-                logger.debug('Found %j %s containers.', runningContainers.length, container.image);
-            }
-
+        this.getContainerByGroupId(container.id).then(async(function(runningContainers) {
             if (runningContainers.length < container.instances) {
                 var neededContainers = container.instances - runningContainers.length;
 
@@ -96,89 +82,89 @@ class DockerScaler {
                     helper.removeContainer(runningContainers.pop().Id);
                 }
             }
-
+        })).catch(function(err) {
+            logger.error("Couldn't count running containers: %e", err);
+        }).then(function() {
             if(container.restart) {
                 helper.Timer.add(async(function () {
                     await(self.spawnContainer(container));
                 }), self.config.scaleInterval * 1000);
             }
-
-            resolve();
         });
     }
 
     runContainer(container) {
-        var self = this;
         container = JSON.parse(JSON.stringify(container)); // copy variable to stop referencing
 
         logger.info('Starting instance of %s.', container.image);
         try {
-            var newContainer = await(createContainer());
+            var newContainer = await(this.createContainer(container));
         } catch(err) {
             logger.warn("Couldn't create %s. Will try in next cycle. Error: %s", container.image, err);
             return;
         }
 
         try {
-            await(startContainer(newContainer));
+            await(this.startContainer(newContainer));
         } catch(err) {
             logger.error("Couldn't start %s. Will try in next cycle. Error: %s", container.image, err);
             this.removeContainer(newContainer.Id);
             return;
         }
+    }
 
-        // subfunctions
-        function createContainer() {
-            return new Promise(function(resolve, reject) {
-                var containerConfig = {
-                    Image: container.image,
-                    name: container.name || self.generateName(container.image) + "-" + self.generateId(8),
-                    Labels: {
-                        'auto-deployed': 'true',
-                        'source-image': container.image,
-                        'group-id': container.id
-                    },
-                    Env: container.env,
-                    PortBindings: {},
-                    ExposedPorts: {},
-                    Privileged: container.privileged || false,
-                    Binds: [],
-                    Volumes: {},
-                    VolumesFrom: []
-                };
+    createContainer(container) {
+        var self = this;
 
-                if(container.id == undefined || container.id == null) {
-                    return reject("Your container needs an id.");
+        return new Promise(function(resolve, reject) {
+            var containerConfig = {
+                Image: container.image,
+                name: container.name || self.generateName(container.image) + "-" + self.generateId(8),
+                Labels: {
+                    'auto-deployed': 'true',
+                    'source-image': container.image,
+                    'group-id': container.id
+                },
+                Env: container.env,
+                PortBindings: {},
+                ExposedPorts: {},
+                Privileged: container.privileged || false,
+                Binds: [],
+                Volumes: {},
+                VolumesFrom: []
+            };
+
+            if(container.id == undefined || container.id == null) {
+                return reject("Your container needs an id.");
+            }
+
+            if(!container.restart) {
+                containerConfig.Labels['norestart'] = 'true';
+            }
+
+            self.runHook('beforeCreate', container, containerConfig);
+            self.runHook('beforeCreateLate', container, containerConfig);
+
+            docker.createContainer(containerConfig, function(err, newContainer) {
+                if(err) {
+                    return reject(err);
                 }
 
-                if(!container.restart) {
-                    containerConfig.Labels['norestart'] = 'true';
+                resolve(newContainer);
+            });
+        });
+    }
+
+    startContainer(container) {
+        return new Promise(function(resolve, reject) {
+            container.start(null, function(err) {
+                if(err) {
+                    return reject(err);
                 }
-
-                self.runHook('beforeCreate', container, containerConfig);
-                self.runHook('beforeCreateLate', container, containerConfig);
-
-                docker.createContainer(containerConfig, function(err, newContainer) {
-                    if(err) {
-                        return reject(err);
-                    }
-
-                    resolve(newContainer);
-                });
+                logger.info("Container %s was started.", container.id);
+                resolve();
             });
-        }
-
-        function startContainer(container) {
-            return new Promise(function(resolve, reject) {
-                container.start(null, function(err) {
-                    if(err) {
-                        return reject(err);
-                    }
-                    logger.info("Container %s was started.", container.id);
-                    resolve();
-                });
-            });
-        }
+        });
     }
 
     getContainersByImage(image) {
