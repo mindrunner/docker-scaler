@@ -52,24 +52,67 @@ removeCadavers = function (scaler) {
                 all: true,
                 filters: {
                     status: [state],
-                    label: ['auto-deployed']
+                    label: [
+                        'auto-deployed',
+                        'data-container'
+                    ]
                 }
             };
-            docker.listContainers(listOpts, function(err, containers) {
+            docker.listContainers(listOpts, async(function(err, containers) {
                 if(err) {
                     return reject(err);
                 }
 
                 var result = [];
                 for(var i in containers) {
-                    if(containers[i].Labels['norestart'] != undefined) {
-                        continue;
+                    var container = containers[i];
+
+                    // Don't remove data-containers
+                    if(container.Labels['data-container'] == 'true') {
+                        var dependentContainers = await(getDependentContainers(container.Mounts));
+
+                        var age = Math.round(Date.now() / 1000) - container.Created;
+                        if(age < (scaler.config.scaleInterval * 2.5)) {
+                            continue; // wait at least 2.5 scale cycles before removing
+                        }
+
+                        if(dependentContainers.length > 0) {
+                            continue; // There are dependent containers, don't remove container.
+                        }
                     }
 
                     result.push(containers[i]);
                 }
 
                 resolve(result);
+            }));
+        });
+    };
+
+    var getDependentContainers = function(mounts) {
+        return new Promise(function(resolve, reject) {
+            // only saving mount ids for easier comparing.
+            var mountIds = [];
+            for(var i in mounts) {
+                var mount = mounts[i];
+                mountIds.push(mount.Name);
+            }
+            scaler.getAllRunningContainers().then(function(containers) {
+                var result = [];
+                for(i in containers) {
+                    var container = containers[i];
+
+                    for(var j in container.Mounts) {
+                        mount = container.Mounts[j];
+
+                        if(mountIds.indexOf(mount.Name) != -1) {
+                            result.push(container);
+                        }
+                    }
+                }
+                resolve(result);
+            }).catch(function(err) {
+                reject(err);
             });
         });
     };

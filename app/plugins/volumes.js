@@ -4,8 +4,9 @@ const async = require('asyncawait/async'),
     await = require('asyncawait/await'),
 
     helper = require('../src/helper'),
-    logger = helper.Logger.getInstance(),
-    docker = helper.Docker.getInstance();
+    hookException = require('../src/exceptions/hookException'),
+
+    logger = helper.Logger.getInstance();
 
 var volumes = async(function (scaler) {
     scaler.hooks.beforeCreate.push(function (config, args) {
@@ -28,16 +29,15 @@ var volumes = async(function (scaler) {
             }
         }
 
-        for(i in container.volumes_from) {
-            var volumesFrom = container.volumes_from[i].split(":"),
-                containerName = volumesFrom[0];
+        for(i in container.volumesFrom) {
+            var volumesFrom = container.volumesFrom[i].split(":"),
+                groupId = volumesFrom[0];
 
             fsMode = volumesFrom[1] || "rw";
 
-            var sourceContainer = await(scaler.getContainerByName(containerName));
+            var sourceContainer = await(scaler.getNewestContainerByGroupId(groupId));
             if(sourceContainer == null) {
-                logger.error("Didn't found container %s.", containerName);
-                continue;
+                throw new hookException("Didn't find data container " + groupId);
             }
 
             for(var j in sourceContainer.Mounts) {
