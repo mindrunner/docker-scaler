@@ -71,6 +71,11 @@ removeCadavers = function (scaler) {
                     if(container.Labels['data-container'] == 'true') {
                         var dependentContainers = await(getDependentContainers(container.Mounts));
 
+                        var age = Math.round(Date.now() / 1000) - container.Created;
+                        if(age < (scaler.config.scaleInterval * 2.5)) {
+                            continue; // wait at least 2.5 scale cycles before removing
+                        }
+
                         if(dependentContainers.length > 0) {
                             continue; // There are dependent containers, don't remove container.
                         }

@@ -23,14 +23,14 @@ class DockerScaler {
             ageCheckInterval: 30, // Interval in seconds to check if the age of the running instances
             slowKill: 1, // Amount of containers that get killed at once, if they are to old. Set 0 to disable.
             slowKillWait: 10, // Time in seconds to wait after slowKill, limit was reached. (should be shorter than ageCheckInterval)
-            containers: [],
+            containers: {},
             logLevel: 'info',
             minPort: 40000, //settings for random ports
             maxPort: 50000,
             auth: {}
         };
 
-        this.defaultContainerConfig = {
+        this.defaultContainersetConfig = {
             pull: true,
             image: null,
             instances: 0,
@@ -56,58 +56,58 @@ class DockerScaler {
 
     init() {
         for (var i in this.config.containers) {
-            var defaultConfig = JSON.parse(JSON.stringify(this.defaultContainerConfig)), // copy the variables, otherwise they are referenced
-                container = JSON.parse(JSON.stringify(this.config.containers[i]));
-            container = Object.assign(defaultConfig, container); // merge default config with
-            container.id = i;
+            var defaultConfig = JSON.parse(JSON.stringify(this.defaultContainersetConfig)), // copy the variables, otherwise they are referenced
+                containerset = JSON.parse(JSON.stringify(this.config.containers[i]));
+            containerset = Object.assign(defaultConfig, containerset); // merge default config with
+            containerset.id = i;
 
             // add latest tag if no tag is there
-            if(container.image.split(':').length < 2) {
-                container.image += ":latest";
+            if(containerset.image.split(':').length < 2) {
+                containerset.image += ":latest";
             }
 
-            if(container.isDataContainer) {
-                this.spawnDataContainer(container);
+            if(containerset.isDataContainer) {
+                this.spawnDataContainer(containerset);
             } else {
-                this.spawnWorkerContainer(container);
+                this.spawnWorkerContainer(containerset);
             }
         }
     }
 
-    spawnWorkerContainer(container) {
+    spawnWorkerContainer(containerset) {
         var self = this;
 
-        this.getContainerByGroupId(container.id).then(async(function(runningContainers) {
-            if (runningContainers.length < container.instances) {
-                var neededContainers = container.instances - runningContainers.length;
+        this.getContainerByGroupId(containerset.id).then(async(function(runningContainers) {
+            if (runningContainers.length < containerset.instances) {
+                var neededContainers = containerset.instances - runningContainers.length;
 
                 for (var i = 0; i < neededContainers; i++) {
-                    await(self.runContainer(container));
+                    await(self.runContainer(containerset));
                 }
-            } else if (runningContainers.length > container.instances) {
-                var overContainers = runningContainers.length - container.instances;
+            } else if (runningContainers.length > containerset.instances) {
+                var overContainers = runningContainers.length - containerset.instances;
 
                 for (var i = 0; i < overContainers; i++) {
-                    logger.info("Scaling down %s.", container.image);
+                    logger.info("Scaling down %s.", containerset.image);
                     helper.removeContainer(runningContainers.pop().Id);
                 }
             }
         })).catch(function(err) {
             logger.error("Couldn't count running containers: %s", err);
         }).then(function() {
-            if(container.restart) {
+            if(containerset.restart) {
                 helper.Timer.add(async(function () {
-                    await(self.spawnWorkerContainer(container));
+                    await(self.spawnWorkerContainer(containerset));
                 }), self.config.scaleInterval * 1000);
             }
         });
     }
 
-    spawnDataContainer(container) {
+    spawnDataContainer(containerset) {
         var self = this;
 
-        this.getContainersByImage(container.image).then(function(existingContainers) {
-            self.getNewestImageByRepoTag(container.image).then(async(function(newestImage) {
+        this.getContainersByImage(containerset.image).then(function(existingContainers) {
+            self.getNewestImageByRepoTag(containerset.image).then(async(function(newestImage) {
                 var hasNewestImage = false;
 
                 for(var i in existingContainers) {
@@ -119,7 +119,7 @@ class DockerScaler {
                 }
 
                 if (!hasNewestImage) {
-                    await(self.runContainer(container));
+                    await(self.runContainer(containerset));
                 }
             })).catch(function(err) {
                 logger.error("Couldn't get images: %s", err);
@@ -127,65 +127,65 @@ class DockerScaler {
         }).catch(function(err) {
             logger.error("Couldn't count running containers: %s", err);
         }).then(function() {
-            if(container.restart) {
+            if(containerset.restart) {
                 helper.Timer.add(async(function () {
-                    await(self.spawnDataContainer(container));
+                    await(self.spawnDataContainer(containerset));
                 }), self.config.scaleInterval * 1000);
             }
         });
     }
 
-    runContainer(container) {
+    runContainer(containerset) {
         var self = this;
 
-        container = JSON.parse(JSON.stringify(container)); // copy variable to stop referencing
-        logger.info('Starting instance of %s.', container.image);
+        containerset = JSON.parse(JSON.stringify(containerset)); // copy variable to stop referencing
+        logger.info('Starting instance of %s.', containerset.image);
 
         return new Promise(function(resolve, reject) {
-            self.createContainer(container).then(function(newContainer) {
+            self.createContainer(containerset).then(function(newContainer) {
                 self.startContainer(newContainer).then(function() {
                     resolve(newContainer);
                 }).catch(function(err) {
-                    logger.error("Couldn't start %s. Will try in next cycle. Error: %s", container.image, err);
+                    logger.error("Couldn't start %s. Will try in next cycle. Error: %s", containerset.image, err);
                     reject(err);
                 });
             }).catch(function(err) {
-                logger.warn("Couldn't create %s. Will try in next cycle. Error: %s", container.image, err);
+                logger.warn("Couldn't create %s. Will try in next cycle. Error: %s", containerset.image, err);
                 reject(err);
             });
         });
     }
 
-    createContainer(container) {
+    createContainer(containerset) {
         var self = this;
 
         return new Promise(function(resolve, reject) {
-            var containerConfig = {
-                Image: container.image,
-                name: container.name || container.id + "-" + self.generateId(8),
+            var containersetConfig = {
+                Image: containerset.image,
+                name: containerset.name || containerset.id + "-" + self.generateId(8),
                 Labels: {
                     'auto-deployed': 'true',
-                    'source-image': container.image,
-                    'group-id': container.id,
-                    'data-container': container.isDataContainer.toString()
+                    'source-image': containerset.image,
+                    'group-id': containerset.id,
+                    'data-container': containerset.isDataContainer.toString()
                 },
-                Env: container.env,
+                Env: containerset.env,
                 PortBindings: {},
                 ExposedPorts: {},
-                Privileged: container.privileged || false,
+                Privileged: containerset.privileged || false,
                 Binds: [],
                 Volumes: {},
                 VolumesFrom: []
             };
 
             // Workaround for old versions of scaler @TODO remove when not needed anymore
-            if(container.isDataContainer) {
-                containerConfig.Labels['norestart'] = 'true';
+            if(containerset.isDataContainer) {
+                containersetConfig.Labels['norestart'] = 'true';
             }
 
             try {
-                self.runHook('beforeCreate', container, containerConfig);
-                self.runHook('beforeCreateLate', container, containerConfig);
+                self.runHook('beforeCreate', containerset, containersetConfig);
+                self.runHook('beforeCreateLate', containerset, containersetConfig);
             } catch(err) {
                 if(err instanceof hookException) {
                     return reject(err.message);
@@ -195,7 +195,7 @@ class DockerScaler {
             }
 
 
-            docker.createContainer(containerConfig, function(err, newContainer) {
+            docker.createContainer(containersetConfig, function(err, newContainer) {
                 if(err) {
                     return reject(err);
                 }
