@@ -341,11 +341,42 @@ class DockerScaler {
         });
     }
 
-    getContainerByName(name) {
+    getDataContainers() {
+        return new Promise(function(resolve, reject) {
+            var listOpts = {
+                all: true,
+                filters: {
+                    label: [
+                        'auto-deployed',
+                        'data-container'
+                    ]
+                }
+            };
+
+            docker.listContainers(listOpts,function(err, containers) {
+                if(err) {
+                    return reject(err);
+                }
+
+                // Workaround for docker. They don't support filter by label value.
+                var result = [];
+                for(var i in containers) {
+                    var container = containers[i];
+
+                    if(container.Labels['data-container'] == 'true') {
+                        result.push(container);
+                    }
+                }
+
+                resolve(result);
+            });
+        });
+    }
+
+    getAllRunningContainers() {
         var listOpts = {
-            all: true,
             filters: {
-                name: [ name ],
+                status: ['running'],
                 label: ['auto-deployed']
             }
         };
@@ -356,16 +387,7 @@ class DockerScaler {
                     return reject(err);
                 }
 
-                // Workaround for old docker. They don't support filter by name.
-                for(var i in containers) {
-                    var container = containers[i];
-
-                    if(container.Names.indexOf("/" + name) != -1) {
-                        return resolve(container);
-                    }
-                }
-
-                resolve(null);
+                resolve(containers);
             })
         });
     }

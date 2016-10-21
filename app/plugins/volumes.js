@@ -37,7 +37,7 @@ var volumes = async(function (scaler) {
 
             var sourceContainer = await(scaler.getNewestContainerByGroupId(groupId));
             if(sourceContainer == null) {
-                throw new hookException("Didn't found data container " + groupId);
+                throw new hookException("Didn't find data container " + groupId);
             }
 
             for(var j in sourceContainer.Mounts) {
