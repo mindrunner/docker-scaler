@@ -15,17 +15,18 @@ var dynamicEnvVariablesPlugin = async(function (scaler) {
         dynamicVariables['{{CONTAINER_NAME}}'] = containerConfig.name;
 
         for (var i in containerConfig.Env) {
-            var env = containerConfig.Env[i].split("="),
-                envKey = env[0],
-                envValue = env[1];
+            var env = containerConfig.Env[i];
+            var envKey = env.substr(0, env.indexOf('='));
+            var envValue = env.substr(env.indexOf('=') + 1);
 
             containerConfig.Env[i] = envKey + "=" + replaceDynamicVariables(dynamicVariables, envValue);
 
             // allowing copy of env variables
             for (var j in containerConfig.Env) {
-                var envs = containerConfig.Env[j].split("=");
-
-                containerConfig.Env[i] = containerConfig.Env[i].replace("{{" + envs[0] + "}}", envs[1]);
+                var envs = containerConfig.Env[j];
+                var envKey = envs.substr(0, envs.indexOf('='));
+                var envValue = envs.substr(envs.indexOf('=') + 1);
+                containerConfig.Env[i] = containerConfig.Env[i].replace("{{" + envKey + "}}", envValue);
             }
         }
     });
