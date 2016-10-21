@@ -61,6 +61,11 @@ class DockerScaler {
             container = Object.assign(defaultConfig, container); // merge default config with
             container.id = i;
 
+            // add latest tag if no tag is there
+            if(container.image.split(':').length < 2) {
+                container.image += ":latest";
+            }
+
             if(container.isDataContainer) {
                 this.spawnDataContainer(container);
             } else {
@@ -100,11 +105,6 @@ class DockerScaler {
 
     spawnDataContainer(container) {
         var self = this;
-
-        // add latest tag if no tag is there
-        if(container.image.split(':').length < 2) {
-            container.image += ":latest";
-        }
 
         this.getContainersByImage(container.image).then(function(existingContainers) {
             self.getNewestImageByRepoTag(container.image).then(async(function(newestImage) {
@@ -178,7 +178,8 @@ class DockerScaler {
                 VolumesFrom: []
             };
 
-            if(!container.restart) {
+            // Workaround for old versions of scaler @TODO remove when not needed anymore
+            if(container.isDataContainer) {
                 containerConfig.Labels['norestart'] = 'true';
             }
 
