@@ -295,7 +295,7 @@ class DockerScaler {
                 for(var i in images) {
                     var image = images[i];
 
-                    if(image.RepoTags.indexOf(repoTag) != -1) {
+                    if(image.RepoTags != null && image.RepoTags.indexOf(repoTag) != -1) {
                         if(result === null) {
                             result = image;
                         } else if(result.Created < image.Created) {
