@@ -112,6 +112,7 @@ class DockerScaler {
 
                 for(var i in existingContainers) {
                     var existingContainer = existingContainers[i];
+                    logger.debug("Existing container: %s: ", existingContainer);
 
                     if(existingContainer.ImageID == newestImage.Id) {
                         hasNewestImage = true
@@ -119,7 +120,9 @@ class DockerScaler {
                 }
 
                 if (!hasNewestImage) {
+                    logger.debug("Start running data container %s", containerset);
                     await(self.runContainer(containerset));
+                    logger.debug("Finished running data container %s", containerset);
                 }
             })).catch(function(err) {
                 logger.error("Couldn't get images: %s", err);
