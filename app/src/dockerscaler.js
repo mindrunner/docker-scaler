@@ -131,8 +131,11 @@ class DockerScaler {
             logger.error("Couldn't count running containers: %s", err);
         }).then(function() {
             if(containerset.restart) {
+                logger.debug("Restarting Timer")
                 helper.Timer.add(async(function () {
+                    logger.debug("Start spawn data container %s", containerset);
                     await(self.spawnDataContainer(containerset));
+                    logger.debug("Finished spawn data container %s", containerset);
                 }), self.config.scaleInterval * 1000);
             }
         });
