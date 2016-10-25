@@ -110,7 +110,11 @@ class DockerScaler {
 
                 if (!hasNewestImage) {
                     logger.debug("sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss");
-                    await(self.runContainer(containerset));
+                    try {
+                        await(self.runContainer(containerset));
+                    } catch (err) {
+                        logger.debug("catched %s", err);
+                    }
                     logger.debug("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
                 }
             })).catch(function (err) {
@@ -119,6 +123,7 @@ class DockerScaler {
         }).catch(function (err) {
             logger.error("Couldn't count running data containers: %s", err);
         }).then(function () {
+            logger.debug("new timer");
             helper.Timer.add(async(function () {
                 await(self.spawnDataContainer(containerset));
             }), self.config.scaleInterval * 1000);
@@ -133,7 +138,7 @@ class DockerScaler {
 
         return new Promise(function (resolve, reject) {
             self.createContainer(containerset).then(function (newContainer) {
-                logger.error("Created %s. ", containerset.image);
+                logger.debug("Created %s. ", containerset.image);
                 self.startContainer(newContainer).then(function () {
                     logger.error("Started %s. ", containerset.image);
                     resolve(newContainer);
