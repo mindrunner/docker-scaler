@@ -87,9 +87,9 @@ class DockerScaler {
         })).catch(function (err) {
             logger.error("Couldn't count running containers: %s", err);
         }).then(function () {
-            helper.Timer.add(async(function () {
-                await(self.spawnWorkerContainer(containerset));
-            }), self.config.scaleInterval * 1000);
+            // helper.Timer.add(async(function () {
+            //     await(self.spawnWorkerContainer(containerset));
+            // }), self.config.scaleInterval * 1000);
         });
     }
 
