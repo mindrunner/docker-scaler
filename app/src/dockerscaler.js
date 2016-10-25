@@ -117,7 +117,7 @@ class DockerScaler {
                 logger.error("Couldn't get images: %s", err);
             });
         }).catch(function (err) {
-            logger.error("Couldn't count running containers: %s", err);
+            logger.error("Couldn't count running data containers: %s", err);
         }).then(function () {
             helper.Timer.add(async(function () {
                 await(self.spawnDataContainer(containerset));
