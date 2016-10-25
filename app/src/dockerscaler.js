@@ -45,8 +45,8 @@ class DockerScaler {
         this.config = Object.assign(this.defaultConfig, config);
         this.plugins = {};
         this.hooks = {
-            beforeCreate: [],
-            beforeCreateLate: []
+            beforeCreate : [],
+            beforeCreateLate : []
         };
 
         logger.level = this.config.logLevel;
@@ -62,11 +62,11 @@ class DockerScaler {
             containerset.id = i;
 
             // add latest tag if no tag is there
-            if (containerset.image.split(':').length < 2) {
+            if(containerset.image.split(':').length < 2) {
                 containerset.image += ":latest";
             }
 
-            if (containerset.isDataContainer) {
+            if(containerset.isDataContainer) {
                 this.spawnDataContainer(containerset);
             } else {
                 this.spawnWorkerContainer(containerset);
@@ -77,25 +77,18 @@ class DockerScaler {
     spawnWorkerContainer(containerset) {
         var self = this;
 
-        this.getContainerByGroupId(containerset.id).then(async(function (runningContainers) {
+        this.getContainerByGroupId(containerset.id).then(async(function(runningContainers) {
             if (runningContainers.length < containerset.instances) {
                 var neededContainers = containerset.instances - runningContainers.length;
 
                 for (var i = 0; i < neededContainers; i++) {
                     await(self.runContainer(containerset));
                 }
-            } else if (runningContainers.length > containerset.instances) {
-                var overContainers = runningContainers.length - containerset.instances;
-
-                for (var i = 0; i < overContainers; i++) {
-                    logger.info("Scaling down %s.", containerset.image);
-                    helper.removeContainer(runningContainers.pop().Id);
-                }
             }
-        })).catch(function (err) {
+        })).catch(function(err) {
             logger.error("Couldn't count running containers: %s", err);
-        }).then(function () {
-            if (containerset.restart) {
+        }).then(function() {
+            if(containerset.restart) {
                 helper.Timer.add(async(function () {
                     await(self.spawnWorkerContainer(containerset));
                 }), self.config.scaleInterval * 1000);
@@ -106,36 +99,32 @@ class DockerScaler {
     spawnDataContainer(containerset) {
         var self = this;
 
-        this.getContainersByImage(containerset.image).then(function (existingContainers) {
-            self.getNewestImageByRepoTag(containerset.image).then(async(function (newestImage) {
+        this.getContainersByImage(containerset.image).then(function(existingContainers) {
+            self.getNewestImageByRepoTag(containerset.image).then(async(function(newestImage) {
                 var hasNewestImage = false;
 
-                for (var i in existingContainers) {
+                for(var i in existingContainers) {
                     var existingContainer = existingContainers[i];
-                    logger.debug("Existing container: %s: ", existingContainer);
 
-                    if (existingContainer.ImageID == newestImage.Id) {
+                    if(existingContainer.ImageID == newestImage.Id) {
                         hasNewestImage = true
                     }
                 }
 
-                if (!hasNewestImage || true) {
-                    logger.debug("Start running data container %s", containerset);
+                if (!hasNewestImage) {
                     await(self.runContainer(containerset));
-                    logger.debug("Finished running data container %s", containerset);
                 }
-            })).catch(function (err) {
+            })).catch(function(err) {
                 logger.error("Couldn't get images: %s", err);
             });
-        }).catch(function (err) {
+        }).catch(function(err) {
             logger.error("Couldn't count running containers: %s", err);
-        }).then(function () {
-            logger.debug("Restarting Timer");
-            helper.Timer.add(async(function () {
-                logger.debug("Start spawn data container %s", containerset);
-                await(self.spawnDataContainer(containerset));
-                logger.debug("Finished spawn data container %s", containerset);
-            }), self.config.scaleInterval * 1000);
+        }).then(function() {
+            if(containerset.restart) {
+                helper.Timer.add(async(function () {
+                    await(self.spawnDataContainer(containerset));
+                }), self.config.scaleInterval * 1000);
+            }
         });
     }
 
@@ -145,15 +134,15 @@ class DockerScaler {
         containerset = JSON.parse(JSON.stringify(containerset)); // copy variable to stop referencing
         logger.info('Starting instance of %s.', containerset.image);
 
-        return new Promise(function (resolve, reject) {
-            self.createContainer(containerset).then(function (newContainer) {
-                self.startContainer(newContainer).then(function () {
+        return new Promise(function(resolve, reject) {
+            self.createContainer(containerset).then(function(newContainer) {
+                self.startContainer(newContainer).then(function() {
                     resolve(newContainer);
-                }).catch(function (err) {
+                }).catch(function(err) {
                     logger.error("Couldn't start %s. Will try in next cycle. Error: %s", containerset.image, err);
                     reject(err);
                 });
-            }).catch(function (err) {
+            }).catch(function(err) {
                 logger.warn("Couldn't create %s. Will try in next cycle. Error: %s", containerset.image, err);
                 reject(err);
             });
@@ -163,7 +152,7 @@ class DockerScaler {
     createContainer(containerset) {
         var self = this;
 
-        return new Promise(function (resolve, reject) {
+        return new Promise(function(resolve, reject) {
             var containersetConfig = {
                 Image: containerset.image,
                 name: containerset.name || containerset.id + "-" + self.generateId(8),
@@ -183,15 +172,15 @@ class DockerScaler {
             };
 
             // Workaround for old versions of scaler @TODO remove when not needed anymore
-            if (containerset.isDataContainer) {
+            if(containerset.isDataContainer) {
                 containersetConfig.Labels['norestart'] = 'true';
             }
 
             try {
                 self.runHook('beforeCreate', containerset, containersetConfig);
                 self.runHook('beforeCreateLate', containerset, containersetConfig);
-            } catch (err) {
-                if (err instanceof hookException) {
+            } catch(err) {
+                if(err instanceof hookException) {
                     return reject(err.message);
                 }
 
@@ -199,8 +188,8 @@ class DockerScaler {
             }
 
 
-            docker.createContainer(containersetConfig, function (err, newContainer) {
-                if (err) {
+            docker.createContainer(containersetConfig, function(err, newContainer) {
+                if(err) {
                     return reject(err);
                 }
 
@@ -210,9 +199,9 @@ class DockerScaler {
     }
 
     startContainer(container) {
-        return new Promise(function (resolve, reject) {
-            container.start(null, function (err) {
-                if (err) {
+        return new Promise(function(resolve, reject) {
+            container.start(null, function(err) {
+                if(err) {
                     return reject(err);
                 }
                 logger.info("Container %s was started.", container.id);
@@ -232,9 +221,9 @@ class DockerScaler {
             }
         };
 
-        return new Promise(function (resolve, reject) {
+        return new Promise(function(resolve, reject) {
             docker.listContainers(listOpts, function (err, containers) {
-                if (err) {
+                if(err) {
                     return reject(err);
                 }
 
@@ -253,8 +242,8 @@ class DockerScaler {
     }
 
     getContainerByGroupId(id) {
-        return new Promise(function (resolve, reject) {
-            if (id == undefined || id == null) {
+        return new Promise(function(resolve, reject) {
+            if(id == undefined || id == null) {
                 return reject("You need an id.");
             }
 
@@ -269,7 +258,7 @@ class DockerScaler {
             };
 
             docker.listContainers(listOpts, function (err, containers) {
-                if (err) {
+                if(err) {
                     return reject(err);
                 }
 
@@ -288,21 +277,21 @@ class DockerScaler {
     }
 
     getNewestImageByRepoTag(repoTag) {
-        return new Promise(function (resolve, reject) {
-            docker.listImages({}, function (err, images) {
-                if (err) {
+        return new Promise(function(resolve, reject) {
+            docker.listImages({},function(err, images) {
+                if(err) {
                     return reject(err);
                 }
 
                 // Workaround for docker. They don't support filter by name.
                 var result = null;
-                for (var i in images) {
+                for(var i in images) {
                     var image = images[i];
 
-                    if (image.RepoTags != null && image.RepoTags.indexOf(repoTag) != -1) {
-                        if (result === null) {
+                    if(image.RepoTags != null && image.RepoTags.indexOf(repoTag) != -1) {
+                        if(result === null) {
                             result = image;
-                        } else if (result.Created < image.Created) {
+                        } else if(result.Created < image.Created) {
                             result = image;
                         }
                     }
@@ -314,7 +303,7 @@ class DockerScaler {
     }
 
     getNewestContainerByGroupId(id) {
-        return new Promise(function (resolve, reject) {
+        return new Promise(function(resolve, reject) {
             var listOpts = {
                 all: true,
                 filters: {
@@ -322,20 +311,20 @@ class DockerScaler {
                 }
             };
 
-            docker.listContainers(listOpts, function (err, containers) {
-                if (err) {
+            docker.listContainers(listOpts,function(err, containers) {
+                if(err) {
                     return reject(err);
                 }
 
                 // Workaround for docker. They don't support filter by name.
                 var result = null;
-                for (var i in containers) {
+                for(var i in containers) {
                     var container = containers[i];
 
-                    if (container.Labels['group-id'] != undefined && container.Labels['group-id'] == id) {
-                        if (result === null) {
+                    if(container.Labels['group-id'] != undefined && container.Labels['group-id'] == id) {
+                        if(result === null) {
                             result = container;
-                        } else if (result.Created < container.Created) {
+                        } else if(result.Created < container.Created) {
                             result = container;
                         }
                     }
@@ -347,7 +336,7 @@ class DockerScaler {
     }
 
     getDataContainers() {
-        return new Promise(function (resolve, reject) {
+        return new Promise(function(resolve, reject) {
             var listOpts = {
                 all: true,
                 filters: {
@@ -358,17 +347,17 @@ class DockerScaler {
                 }
             };
 
-            docker.listContainers(listOpts, function (err, containers) {
-                if (err) {
+            docker.listContainers(listOpts,function(err, containers) {
+                if(err) {
                     return reject(err);
                 }
 
                 // Workaround for docker. They don't support filter by label value.
                 var result = [];
-                for (var i in containers) {
+                for(var i in containers) {
                     var container = containers[i];
 
-                    if (container.Labels['data-container'] == 'true') {
+                    if(container.Labels['data-container'] == 'true') {
                         result.push(container);
                     }
                 }
@@ -386,9 +375,9 @@ class DockerScaler {
             }
         };
 
-        return new Promise(function (resolve, reject) {
-            docker.listContainers(listOpts, function (err, containers) {
-                if (err) {
+        return new Promise(function(resolve, reject) {
+            docker.listContainers(listOpts, function(err, containers) {
+                if(err) {
                     return reject(err);
                 }
 
@@ -398,9 +387,9 @@ class DockerScaler {
     }
 
     getDockerInfo() {
-        return new Promise(function (resolve, reject) {
-            docker.info(function (err, data) {
-                if (err) {
+        return new Promise(function(resolve, reject) {
+            docker.info(function(err, data) {
+                if(err) {
                     return reject(err);
                 }
 
@@ -410,11 +399,11 @@ class DockerScaler {
     }
 
     stopContainer(id) {
-        return new Promise(function (resolve, reject) {
+        return new Promise(function(resolve, reject) {
             var container = docker.getContainer(id);
 
-            container.stop(function (err) {
-                if (err && err.statusCode != 304) {
+            container.stop(function(err) {
+                if(err && err.statusCode != 304) {
                     return reject(err);
                 }
 
@@ -424,11 +413,11 @@ class DockerScaler {
     }
 
     killContainer(id) {
-        return new Promise(function (resolve, reject) {
+        return new Promise(function(resolve, reject) {
             var container = docker.getContainer(id);
 
-            container.kill(function (err) {
-                if (err && err.statusCode != 304) {
+            container.kill(function(err) {
+                if(err && err.statusCode != 304) {
                     return reject(err);
                 }
 
@@ -437,26 +426,37 @@ class DockerScaler {
         });
     }
 
-    removeContainer(id) {
-        return new Promise(function (resolve, reject) {
-            var container = docker.getContainer(id);
-
-            container.remove(function (err) {
-                if (err) {
+    removeContainer(container) {
+        return new Promise(function(resolve, reject) {
+            docker.getContainer(container.Id).remove(function(err) { //@TODO Check null
+                if(err) {
                     return reject(err);
                 }
-
-                resolve();
+                resolve(container);
             })
+        });
+    }
+
+    removeVolume(name) {
+        return new Promise(function(resolve, reject) {
+            var volume = docker.getVolume(name);
+
+            volume.remove({}, function(err) {
+                if(err) {
+                    reject(err, name);
+                }
+
+                resolve(name);
+            });
         });
     }
 
     inspectContainer(id) {
-        return new Promise(function (resolve, reject) {
+        return new Promise(function(resolve, reject) {
             var container = docker.getContainer(id);
 
-            container.inspect(function (err, data) {
-                if (err) {
+            container.inspect(function(err, data) {
+                if(err) {
                     return reject(err);
                 }
 
@@ -473,7 +473,7 @@ class DockerScaler {
     runHook(hook) {
         var args = Array.prototype.slice.call(arguments);
 
-        for (var i in this.hooks[hook]) {
+        for(var i in this.hooks[hook]) {
             this.hooks[hook][i](this.config, args);
         }
     }
@@ -481,12 +481,12 @@ class DockerScaler {
     trim(str) {
         var regex = /[a-zA-Z0-9]/;
 
-        while (!regex.test(str.charAt(0))) {
+        while(!regex.test(str.charAt(0))) {
             str = str.slice(1);
 
         }
 
-        while (!regex.test(str.charAt(str.length - 1))) {
+        while(!regex.test(str.charAt(str.length - 1))){
             str = str.slice(0, -1);
         }
 

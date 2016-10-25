@@ -32,13 +32,20 @@ removeCadavers = function (scaler) {
 
         for(var i in cadavers) {
             var container = cadavers[i];
-
-            try {
-                scaler.removeContainer(container.Id);
-                logger.info("Removed exited container %s.", container.Id);
-            } catch(err) {
-                logger.error("Couldn't remove container %s: %s", container.Id, err);
-            }
+            scaler.removeContainer(container).then(function(container) {
+                if(container.Labels['data-container'] == 'true') {
+                    for (var j in container.Mounts) {
+                        var mount = container.Mounts[j];
+                        scaler.removeVolume(mount.Name).then(function (name) { //@TODO Check null
+                            logger.info("Removed volume %s.", name);
+                        }).catch(function (err, name) {
+                            logger.warn("Couldn't remove volume %s. Error: %s", name, err);
+                        });
+                    }
+                }
+            }).catch(function(err) {
+                logger.warn("Couldn't remove container Error: %s", err);
+            });
         }
 
         helper.Timer.add(function () {
@@ -69,19 +76,20 @@ removeCadavers = function (scaler) {
 
                     // Don't remove data-containers
                     if(container.Labels['data-container'] == 'true') {
-                        var dependentContainers = await(getDependentContainers(container.Mounts));
-
-                        var age = Math.round(Date.now() / 1000) - container.Created;
-                        if(age < (scaler.config.scaleInterval * 2.5)) {
-                            continue; // wait at least 2.5 scale cycles before removing
+                        try {
+                            var newestContainer = await(scaler.getNewestContainerByGroupId(container.Labels['group-id']));
+                            if(newestContainer.Id != container.Id) {
+                                var dependentContainers = await(getDependentContainers(container.Mounts));
+                                if(dependentContainers.length == 0) {
+                                    result.push(container); // Not the newest and no dependent containers. Remove.
+                                }
+                            }
+                        } catch(err) {
+                            logger.warning("Couldn't get dependent containers: %s", err);
                         }
-
-                        if(dependentContainers.length > 0) {
-                            continue; // There are dependent containers, don't remove container.
-                        }
+                    } else {
+                        result.push(container);
                     }
-
-                    result.push(containers[i]);
                 }
 
                 resolve(result);
