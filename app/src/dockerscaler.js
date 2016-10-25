@@ -447,6 +447,20 @@ class DockerScaler {
         });
     }
 
+    removeVolume(name) {
+        return new Promise(function(resolve, reject) {
+            var volume = docker.getVolume(name);
+
+            volume.remove({}, function(err) {
+                if(err) {
+                    reject(err);
+                }
+
+                resolve();
+            });
+        });
+    }
+
     inspectContainer(id) {
         return new Promise(function(resolve, reject) {
             var container = docker.getContainer(id);

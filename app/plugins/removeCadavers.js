@@ -34,7 +34,16 @@ removeCadavers = function (scaler) {
             var container = cadavers[i];
 
             try {
-                scaler.removeContainer(container.Id);
+                if(container.Labels['data-container'] == 'true') {
+                    scaler.removeContainer(container.Id);
+                    for(var j in container.Mounts) {
+                        var mount = container.Mounts[j];
+                        scaler.removeVolume(mount.Name);
+                    }
+                } else {
+                    scaler.removeContainer(container.Id);
+                }
+
                 logger.info("Removed exited container %s.", container.Id);
             } catch(err) {
                 logger.error("Couldn't remove container %s: %s", container.Id, err);
