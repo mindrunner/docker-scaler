@@ -133,6 +133,7 @@ class DockerScaler {
 
         return new Promise(function (resolve, reject) {
             self.createContainer(containerset).then(function (newContainer) {
+                logger.error("Created %s. ", containerset.image);
                 self.startContainer(newContainer).then(function () {
                     logger.error("Started %s. ", containerset.image);
                     resolve(newContainer);
