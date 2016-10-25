@@ -8,23 +8,27 @@ const async = require('asyncawait/async'),
     docker = helper.Docker.getInstance();
 
 var imagePull = function (scaler) {
-    for(var i in scaler.config.containers) {
-        var containerConfig = scaler.config.containers[i];
 
-        if(containerConfig.pull) {
-            pullImage(containerConfig.image).then(function (image) {
+    for(var i in scaler.config.containers) {
+        var containerset = scaler.config.containers[i];
+        pullContainerset(containerset);
+    }
+
+    function pullContainerset(containerset) {
+        if(containerset.pull) {
+            pullImage(containerset.image).then(function (image) {
                 logger.info("Successfully pulled %s.", image);
                 return image;
             }).catch(function(image, err) {
                 logger.error("Error pulling %s: %s", image, err);
-                return image;
-            }).then(function(image) {
+            }).then(function() {
                 helper.Timer.add(function () {
-                    pullImage(image);
+                    pullContainerset(containerset);
                 }, scaler.config.pullInterval * 1000);
             });
         }
     }
+
 
     function pullImage(image) {
         return new Promise(function(resolve, reject) {

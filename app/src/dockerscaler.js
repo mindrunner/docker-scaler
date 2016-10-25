@@ -84,13 +84,6 @@ class DockerScaler {
                 for (var i = 0; i < neededContainers; i++) {
                     await(self.runContainer(containerset));
                 }
-            } else if (runningContainers.length > containerset.instances) {
-                var overContainers = runningContainers.length - containerset.instances;
-
-                for (var i = 0; i < overContainers; i++) {
-                    logger.info("Scaling down %s.", containerset.image);
-                    helper.removeContainer(runningContainers.pop().Id);
-                }
             }
         })).catch(function(err) {
             logger.error("Couldn't count running containers: %s", err);
@@ -433,16 +426,13 @@ class DockerScaler {
         });
     }
 
-    removeContainer(id) {
+    removeContainer(container) {
         return new Promise(function(resolve, reject) {
-            var container = docker.getContainer(id);
-
-            container.remove(function(err) {
+            docker.getContainer(container.Id).remove(function(err) { //@TODO Check null
                 if(err) {
                     return reject(err);
                 }
-
-                resolve();
+                resolve(container);
             })
         });
     }
@@ -453,10 +443,10 @@ class DockerScaler {
 
             volume.remove({}, function(err) {
                 if(err) {
-                    reject(err);
+                    reject(err, name);
                 }
 
-                resolve();
+                resolve(name);
             });
         });
     }
