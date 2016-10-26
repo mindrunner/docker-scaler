@@ -117,11 +117,11 @@ class DockerScaler {
     spawnDataContainer(containerset) {
         var self = this;
 
-        this.getContainerByGroupId(containerset.id).then(async(function(existingContainers) {
+        this.getContainerByGroupId(containerset.id, true).then(async(function(existingContainers) {
             var hasNewestImage = false;
 
             try {
-                var newestImage = self.getImageByRepoTag(containerset.image);
+                var newestImage = await(self.getImageByRepoTag(containerset.image));
             } catch(err) {
                 logger.error("Couldn't get newest image: %s", err);
                 return;
@@ -236,7 +236,16 @@ class DockerScaler {
         });
     }
 
-    getContainerByGroupId(id) {
+    /**
+     * Get all containers from a set.
+     *
+     * @param id string Id of the container group
+     * @param all boolean show non-running containers too.
+     * @returns {Promise}
+     */
+    getContainerByGroupId(id, all) {
+        all = all || false;
+
         return new Promise(function(resolve, reject) {
             if(id == undefined || id == null) {
                 return reject("You need an id.");
@@ -246,11 +255,16 @@ class DockerScaler {
 
             // Only search for auto-deployed containers
             var listOpts = {
+                all: all,
                 filters: {
-                    status: ['running'],
                     label: ['auto-deployed']
                 }
             };
+
+            if(!all) {
+                // we need to hide non-running containers
+                listOpts.filters.status = ['running'];
+            }
 
             docker.listContainers(listOpts, function (err, containers) {
                 if(err) {
@@ -284,16 +298,17 @@ class DockerScaler {
                 }
 
                 // Workaround for docker. They don't support filter by repotag.
-                var result = null;
                 for(var i in images) {
                     var image = images[i];
 
                     if(image.RepoTags != null && image.RepoTags.indexOf(repoTag) != -1) {
-                        result = image;
+                        // we found the image, stop and resolve promise
+                        return resolve(image);
                     }
                 }
 
-                resolve(result);
+                // we didn't found anything, null
+                resolve(null);
             });
         });
     }
@@ -468,7 +483,7 @@ class DockerScaler {
 
     loadPlugin(plugin) {
         logger.info("Found " + plugin.pluginName + " plugin...");
-        this.plugins[plugin.pluginName] = plugin(this);
+        this.plugins[plugin.pluginName] = new plugin(this);
     }
 
     runHook(hook) {
@@ -486,7 +501,7 @@ class DockerScaler {
      * @param str String to trim
      * @returns {*} Trimmed string
      */
-    static trim(str) {
+    trim(str) {
         var regex = /[a-zA-Z0-9]/;
 
         while(!regex.test(str.charAt(0))) {
@@ -506,7 +521,7 @@ class DockerScaler {
      * @param len
      * @returns {string}
      */
-    static generateId(len) {
+    generateId(len) {
         return crypto.randomBytes(len).toString('hex').substr(len);
     }
 }

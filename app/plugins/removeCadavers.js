@@ -8,10 +8,7 @@ const async = require('asyncawait/async'),
     logger = helper.Logger.getInstance(),
     docker = helper.Docker.getInstance();
 
-// Init function
-var removeCadavers;
-
-removeCadavers = function (scaler) {
+var removeCadavers = function (scaler) {
     const defaultConfig = {
         removeCadavers: {
             enabled: false,
@@ -78,6 +75,7 @@ removeCadavers = function (scaler) {
                     if(container.Labels['data-container'] == 'true') {
                         try {
                             var newestContainer = await(scaler.getNewestContainerByGroupId(container.Labels['group-id']));
+
                             if(newestContainer.Id != container.Id) {
                                 var dependentContainers = await(getDependentContainers(container.Mounts));
                                 if(dependentContainers.length == 0) {
