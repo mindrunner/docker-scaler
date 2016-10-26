@@ -110,7 +110,7 @@ removeIdleJenkinsSlaves = function (scaler) {
                     var container = containers[i],
                         containerId = container.Names[0].slice(-8);
 
-                    if (containerId.trim() == id.trim()) {
+                    if (containerId.trim() == DockerScaler.trim()) {
                         return resolve(container);
                     }
                 }
@@ -137,13 +137,13 @@ removeIdleJenkinsSlaves = function (scaler) {
                     return reject(error);
                 }
 
-                var serverList = body.trim().split("\n");
+                var serverList = DockerScaler.trim().split("\n");
                 if (serverList.length == 0) {
                     return reject("Didn't get any server from API");
                 }
 
                 for (var i in serverList) {
-                    var server = serverList[i].trim();
+                    var server = DockerScaler.trim();
                     if (server.length == 0) {
                         continue;
                     }
@@ -175,13 +175,13 @@ removeIdleJenkinsSlaves = function (scaler) {
                     return reject(error);
                 }
 
-                var serverList = body.trim().split("\n");
+                var serverList = DockerScaler.trim().split("\n");
                 if (serverList.length == 0) {
                     return reject("Didn't get any server from API");
                 }
 
                 for (var i in serverList) {
-                    var server = serverList[i].trim();
+                    var server = DockerScaler.trim();
                     if (server.length == 0) {
                         continue;
                     }

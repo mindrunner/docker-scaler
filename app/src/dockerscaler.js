@@ -54,12 +54,15 @@ class DockerScaler {
         cleanup.Cleanup(this.config);
     }
 
+    /**
+     * Initializes the scaler and starts all services the first time
+     */
     init() {
         for (var i in this.config.containers) {
             var defaultConfig = JSON.parse(JSON.stringify(this.defaultContainersetConfig)), // copy the variables, otherwise they are referenced
                 containerset = JSON.parse(JSON.stringify(this.config.containers[i]));
-            containerset = Object.assign(defaultConfig, containerset); // merge default config with
-            containerset.id = i;
+            containerset = Object.assign(defaultConfig, containerset); // merge default config with the containerset
+            containerset.id = i; // object key of containerset is the same as the id.
 
             // add latest tag if no tag is there
             if(containerset.image.split(':').length < 2) {
@@ -74,6 +77,11 @@ class DockerScaler {
         }
     }
 
+    /**
+     * Spawns worker containers based on containerset config
+     *
+     * @param containerset Object with containerset config
+     */
     spawnWorkerContainer(containerset) {
         var self = this;
 
@@ -82,51 +90,70 @@ class DockerScaler {
                 var neededContainers = containerset.instances - runningContainers.length;
 
                 for (var i = 0; i < neededContainers; i++) {
-                    await(self.runContainer(containerset));
+                    try {
+                        // we need to wait until the container is running,
+                        // to avoid starting to much containers
+                        await(self.runContainer(containerset));
+                    } catch(err) {
+                        logger.warn(err);
+                    }
                 }
             }
         })).catch(function(err) {
             logger.error("Couldn't count running containers: %s", err);
         }).then(function() {
-            if(containerset.restart) {
-                helper.Timer.add(async(function () {
-                    await(self.spawnWorkerContainer(containerset));
-                }), self.config.scaleInterval * 1000);
-            }
+            // restart process when finished
+            helper.Timer.add(function () {
+                self.spawnWorkerContainer(containerset);
+            }, self.config.scaleInterval * 1000);
         });
     }
 
+    /**
+     * Spawns data container based on containerset config
+     *
+     * @param containerset Object with containerset config
+     */
     spawnDataContainer(containerset) {
         var self = this;
 
-        this.getContainersByImage(containerset.image).then(function(existingContainers) {
-            self.getNewestImageByRepoTag(containerset.image).then(async(function(newestImage) {
-                var hasNewestImage = false;
+        this.getContainersByImage(containerset.image).then(async(function(existingContainers) {
+            var hasNewestImage = false;
 
-                for(var i in existingContainers) {
-                    var existingContainer = existingContainers[i];
+            try {
+                var newestImage = self.getNewestImageByRepoTag(containerset.image);
+            } catch(err) {
+                logger.error("Couldn't get newest image: %s", err);
+                return;
+            }
 
-                    if(existingContainer.ImageID == newestImage.Id) {
-                        hasNewestImage = true
-                    }
+            for(var i in existingContainers) {
+                var existingContainer = existingContainers[i];
+
+                if(existingContainer.ImageID == newestImage.Id) {
+                    hasNewestImage = true
                 }
+            }
 
-                if (!hasNewestImage) {
+            if (!hasNewestImage) {
+                try {
+                    // we need to wait until the container is running,
+                    // to avoid starting to much containers
                     await(self.runContainer(containerset));
+                } catch(err) {
+                    logger.warn(err);
                 }
-            })).catch(function(err) {
-                logger.error("Couldn't get images: %s", err);
-            });
-        }).catch(function(err) {
+            }
+        })).catch(function(err) {
             logger.error("Couldn't count running containers: %s", err);
         }).then(function() {
-            if(containerset.restart) {
-                helper.Timer.add(async(function () {
-                    await(self.spawnDataContainer(containerset));
-                }), self.config.scaleInterval * 1000);
-            }
+            // restart process when finished
+            helper.Timer.add(function () {
+                self.spawnDataContainer(containerset);
+            }, self.config.scaleInterval * 1000);
         });
     }
+
 
     runContainer(containerset) {
         var self = this;
@@ -186,7 +213,6 @@ class DockerScaler {
 
                 return reject(err);
             }
-
 
             docker.createContainer(containersetConfig, function(err, newContainer) {
                 if(err) {
@@ -478,7 +504,14 @@ class DockerScaler {
         }
     }
 
-    trim(str) {
+    /**
+     * Special trim function that allows you to trim a string,
+     * that it only has numbers and chars at the beginning and end.
+     *
+     * @param str String to trim
+     * @returns {*} Trimmed string
+     */
+    static trim(str) {
         var regex = /[a-zA-Z0-9]/;
 
         while(!regex.test(str.charAt(0))) {
@@ -493,7 +526,12 @@ class DockerScaler {
         return str;
     }
 
-    generateId(len) {
+    /**
+     * Generates an id
+     * @param len
+     * @returns {string}
+     */
+    static generateId(len) {
         return crypto.randomBytes(len).toString('hex').substr(len);
     }
 }
