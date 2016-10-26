@@ -117,11 +117,11 @@ class DockerScaler {
     spawnDataContainer(containerset) {
         var self = this;
 
-        this.getContainersByImage(containerset.image).then(async(function(existingContainers) {
+        this.getContainerByGroupId(containerset.id).then(async(function(existingContainers) {
             var hasNewestImage = false;
 
             try {
-                var newestImage = self.getNewestImageByRepoTag(containerset.image);
+                var newestImage = self.getImageByRepoTag(containerset.image);
             } catch(err) {
                 logger.error("Couldn't get newest image: %s", err);
                 return;
@@ -236,37 +236,6 @@ class DockerScaler {
         });
     }
 
-    getContainersByImage(image) {
-        logger.debug('Searching instances of %s.', image);
-
-        // Only search for auto-deployed containers
-        var listOpts = {
-            all: true,
-            filters: {
-                label: ['auto-deployed']
-            }
-        };
-
-        return new Promise(function(resolve, reject) {
-            docker.listContainers(listOpts, function (err, containers) {
-                if(err) {
-                    return reject(err);
-                }
-
-                var containerList = [];
-                for (var i in containers) {
-                    var container = containers[i];
-
-                    if (container.Labels['source-image'] == image) {
-                        containerList.push(container);
-                    }
-                }
-
-                resolve(containerList);
-            });
-        });
-    }
-
     getContainerByGroupId(id) {
         return new Promise(function(resolve, reject) {
             if(id == undefined || id == null) {
@@ -302,24 +271,25 @@ class DockerScaler {
         });
     }
 
-    getNewestImageByRepoTag(repoTag) {
+    /**
+     * Get docker image by repo tag
+     * @param repoTag Docker repo tag (e.g. rootlogin/shared:latest)
+     * @returns {Promise}
+     */
+    getImageByRepoTag(repoTag) {
         return new Promise(function(resolve, reject) {
             docker.listImages({},function(err, images) {
                 if(err) {
                     return reject(err);
                 }
 
-                // Workaround for docker. They don't support filter by name.
+                // Workaround for docker. They don't support filter by repotag.
                 var result = null;
                 for(var i in images) {
                     var image = images[i];
 
                     if(image.RepoTags != null && image.RepoTags.indexOf(repoTag) != -1) {
-                        if(result === null) {
-                            result = image;
-                        } else if(result.Created < image.Created) {
-                            result = image;
-                        }
+                        result = image;
                     }
                 }
 
@@ -328,6 +298,11 @@ class DockerScaler {
         });
     }
 
+    /**
+     * Gets the newest running container by it's group id.
+     * @param id
+     * @returns {Promise}
+     */
     getNewestContainerByGroupId(id) {
         return new Promise(function(resolve, reject) {
             var listOpts = {
