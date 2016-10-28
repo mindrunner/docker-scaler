@@ -63,11 +63,15 @@ class DockerScaler {
                 containerset = JSON.parse(JSON.stringify(this.config.containers[i]));
             containerset = Object.assign(defaultConfig, containerset); // merge default config with the containerset
             containerset.id = i; // object key of containerset is the same as the id.
+            containerset.image = containerset.image.toLocaleLowerCase();
 
             // add latest tag if no tag is there
             if(containerset.image.split(':').length < 2) {
                 containerset.image += ":latest";
             }
+
+            // docker.io will be removed from the image string, because docker does that too.
+            containerset.image = containerset.image.replace(/^(docker.io\/)/,"");
 
             if(containerset.isDataContainer) {
                 this.spawnDataContainer(containerset);
