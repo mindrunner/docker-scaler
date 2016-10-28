@@ -10,12 +10,12 @@ const async = require('asyncawait/async'),
 
 var removeCadavers = function (scaler) {
     const defaultConfig = {
-        removeCadavers: {
-            enabled: false,
-            checkInterval: 30
-        }
+        enabled: false,
+        checkInterval: 30,
+        removeDanglingImages: true,
+        removeDanglingVolumes: true
     };
-    scaler.config = Object.assign(defaultConfig, scaler.config);
+    scaler.config.removeCadavers = Object.assign(defaultConfig, scaler.config.removeCadavers);
 
     var checkCadavers = async(function() {
         logger.debug("Searching cadavers...");
@@ -43,6 +43,36 @@ var removeCadavers = function (scaler) {
             }).catch(function(err) {
                 logger.warn("Couldn't remove container Error: %s", err);
             });
+        }
+
+        if(scaler.config.removeCadavers.removeDanglingImages) {
+            var danglingImages = await(getDanglingImages());
+
+            for(var i in danglingImages) {
+                var image = danglingImages[i];
+
+                logger.debug("Removing dangling image %s.", image.Id);
+                scaler.removeImage(image.Id).then(function (name) { //@TODO Check null
+                    logger.info("Removed dangling image %s.", name);
+                }).catch(function (err, name) {
+                    logger.warn("Couldn't remove dangling image %s. Error: %s", name, err);
+                });
+            }
+        }
+
+        if(scaler.config.removeCadavers.removeDanglingVolumes) {
+            var danglingVolumes = await(getDanglingVolumes());
+
+            for(var i in danglingVolumes) {
+                var volume = danglingVolumes[i];
+
+                logger.debug("Removing dangling volume %s.", volume.Name);
+                scaler.removeVolume(volume.Name).then(function (name) { //@TODO Check null
+                    logger.info("Removed dangling volume %s.", name);
+                }).catch(function (err, name) {
+                    logger.warn("Couldn't remove dangling volume %s. Error: %s", name, err);
+                });
+            }
         }
 
         helper.Timer.add(function () {
@@ -92,6 +122,43 @@ var removeCadavers = function (scaler) {
 
                 resolve(result);
             }));
+        });
+    };
+
+    var getDanglingImages = function() {
+        return new Promise(function(resolve, reject) {
+            var listOpts = {
+                all: true,
+                filters: {
+                    dangling: ['true']
+                }
+            };
+            docker.listImages(listOpts, function(err, containers) {
+                if(err) {
+                    return reject(err);
+                }
+
+                resolve(containers);
+            });
+        });
+    };
+
+    var getDanglingVolumes = function() {
+        return new Promise(function(resolve, reject) {
+            var listOpts = {
+                all: true,
+                filters: {
+                    dangling: ['true']
+                }
+            };
+            docker.listVolumes(listOpts, function(err, volumes) {
+                if(err) {
+                    return reject(err);
+                }
+
+                // strange behavior in docker api. volumes list is a list in a list.
+                resolve(volumes.Volumes);
+            });
         });
     };
 

@@ -68,7 +68,9 @@ The configuration has to be made in JSON and needs to be mounted to _/opt/docker
     },
     "removeCadavers": { // auto remove exited containers
       "enabled": false,
-      "checkInterval": 30 // seconds
+      "checkInterval": 30, // seconds,
+      "removeDanglingImages": true,
+      "removeDanglingVolumes": true
     },
     "auth": { // authentication on docker hub
       "serveraddress": "https://index.docker.io/v1",

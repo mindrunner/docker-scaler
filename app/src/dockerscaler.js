@@ -444,7 +444,9 @@ class DockerScaler {
 
     removeContainer(container) {
         return new Promise(function(resolve, reject) {
-            docker.getContainer(container.Id).remove(function(err) { //@TODO Check null
+            var container = docker.getContainer(container.Id); //@TODO Check null
+
+            container.remove(function(err) {
                 if(err) {
                     return reject(err);
                 }
@@ -458,6 +460,20 @@ class DockerScaler {
             var volume = docker.getVolume(name);
 
             volume.remove({}, function(err) {
+                if(err) {
+                    reject(err, name);
+                }
+
+                resolve(name);
+            });
+        });
+    }
+
+    removeImage(name) {
+        return new Promise(function(resolve, reject) {
+            var image = docker.getImage(name);
+
+            image.remove({}, function(err) {
                 if(err) {
                     reject(err, name);
                 }
