@@ -60,8 +60,8 @@ class DockerScaler {
     init() {
         for (var i in this.config.containers) {
             var defaultConfig = JSON.parse(JSON.stringify(this.defaultContainersetConfig)), // copy the variables, otherwise they are referenced
-                containerset = JSON.parse(JSON.stringify(this.config.containers[i]));
-            containerset = Object.assign(defaultConfig, containerset); // merge default config with the containerset
+            containerset = this.config.containers[i] = Object.assign(defaultConfig, this.config.containers[i]); // merge default config with the containerset
+
             containerset.id = i; // object key of containerset is the same as the id.
             containerset.image = containerset.image.toLocaleLowerCase();
 

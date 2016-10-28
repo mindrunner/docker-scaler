@@ -34,6 +34,7 @@ class imagePull {
      * @param containerset
      */
     pullContainerset(containerset) {
+        console.log(containerset)
         var self = this;
 
         if(containerset.pull) {

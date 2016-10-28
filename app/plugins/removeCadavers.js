@@ -29,20 +29,28 @@ var removeCadavers = function (scaler) {
 
         for(var i in cadavers) {
             var container = cadavers[i];
-            scaler.removeContainer(container).then(function(container) {
-                if(container.Labels['data-container'] == 'true') {
-                    for (var j in container.Mounts) {
-                        var mount = container.Mounts[j];
-                        scaler.removeVolume(mount.Name).then(function (name) { //@TODO Check null
-                            logger.info("Removed volume %s.", name);
-                        }).catch(function (err, name) {
-                            logger.warn("Couldn't remove volume %s. Error: %s", name, err);
-                        });
+
+            try {
+                logger.debug("Removing container %s.", image.Id);
+                container = await(scaler.removeContainer(container));
+                logger.info("Removed container %s.", container.Id);
+            } catch(err) {
+                logger.error("Couldn't remove container Error: %s", err);
+            }
+
+            if(container.Labels['data-container'] == 'true') {
+                for (var j in container.Mounts) {
+                    var mount = container.Mounts[j];
+
+                    try {
+                        logger.debug("Removing volume %s.", mount.Name);
+                        await(scaler.removeVolume(mount.Name));
+                        logger.info("Removed volume %s.", mount.Name);
+                    } catch(err) {
+                        logger.error("Couldn't remove volume %s. Error: %s", mount.Name, err);
                     }
                 }
-            }).catch(function(err) {
-                logger.warn("Couldn't remove container Error: %s", err);
-            });
+            }
         }
 
         if(scaler.config.removeCadavers.removeDanglingImages) {
@@ -51,12 +59,13 @@ var removeCadavers = function (scaler) {
             for(var i in danglingImages) {
                 var image = danglingImages[i];
 
-                logger.debug("Removing dangling image %s.", image.Id);
-                scaler.removeImage(image.Id).then(function (name) { //@TODO Check null
-                    logger.info("Removed dangling image %s.", name);
-                }).catch(function (err, name) {
-                    logger.warn("Couldn't remove dangling image %s. Error: %s", name, err);
-                });
+                try {
+                    logger.debug("Removing dangling image %s.", image.Id);
+                    await(scaler.removeImage(image.Id));
+                    logger.info("Removed dangling image %s.", image.Id);
+                } catch (err) {
+                    logger.warn("Couldn't remove dangling image %s. Error: %s", image.Id, err);
+                }
             }
         }
 
@@ -66,12 +75,13 @@ var removeCadavers = function (scaler) {
             for(var i in danglingVolumes) {
                 var volume = danglingVolumes[i];
 
-                logger.debug("Removing dangling volume %s.", volume.Name);
-                scaler.removeVolume(volume.Name).then(function (name) { //@TODO Check null
-                    logger.info("Removed dangling volume %s.", name);
-                }).catch(function (err, name) {
-                    logger.warn("Couldn't remove dangling volume %s. Error: %s", name, err);
-                });
+                try {
+                    logger.debug("Removing dangling volume %s.", volume.Name);
+                    await(scaler.removeVolume(volume.Name));
+                    logger.info("Removed dangling volume %s.", volume.Name);
+                } catch(err) {
+                    logger.warn("Couldn't remove dangling volume %s. Error: %s", volume.Name, err);
+                }
             }
         }
 
