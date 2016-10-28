@@ -130,7 +130,7 @@ class DockerScaler {
             for(var i in existingContainers) {
                 var existingContainer = existingContainers[i];
 
-                if(existingContainer.ImageID == newestImage.Id) {
+                if(newestImage != null && existingContainer.ImageID == newestImage.Id) {
                     hasNewestImage = true
                 }
             }
