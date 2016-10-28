@@ -448,8 +448,7 @@ class DockerScaler {
 
     removeContainer(container) {
         return new Promise(function(resolve, reject) {
-            var container = docker.getContainer(container.Id); //@TODO Check null
-
+            container = docker.getContainer(container.Id); //@TODO Check null
             container.remove(function(err) {
                 if(err) {
                     return reject(err);

@@ -31,8 +31,8 @@ var removeCadavers = function (scaler) {
             var container = cadavers[i];
 
             try {
-                logger.debug("Removing container %s.", image.Id);
-                container = await(scaler.removeContainer(container));
+                logger.debug("Removing container %s.", container.Id);
+                await(scaler.removeContainer(container));
                 logger.info("Removed container %s.", container.Id);
             } catch(err) {
                 logger.error("Couldn't remove container Error: %s", err);
