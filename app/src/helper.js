@@ -4,6 +4,7 @@ const fs = require('fs'),
     Docker = require('dockerode'),
     winston = require('winston');
 
+// Logger Singleton
 exports.Logger = (function () {
     var instance;
 
@@ -26,6 +27,7 @@ exports.Logger = (function () {
     };
 })();
 
+// docker singleton
 exports.Docker = (function () {
     var instance;
 
@@ -54,6 +56,7 @@ exports.Docker = (function () {
     };
 })();
 
+// timer singleton (let us stop all timers via cleanup job)
 exports.Timer = (function () {
     var timers = [],
         run = true;

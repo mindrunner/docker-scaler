@@ -1,23 +1,38 @@
 {
   "scaleInterval": 10,
-  "containers": [
-    {
-      "image": "nginx:latest",
+  "pullInterval": 10,
+  "containers": {
+    "shared-data": {
+      "pull": true,
+      "image": "xaamin/shared-volume",
+      "isDataContainer": true
+    },
+    "webserver": {
+      "pull": true,
+      "image": "httpd:latest",
       "instances": 5,
-      "volumes": [
-        "/tmp/:/var/www/"
+      "volumesFrom": [
+        "shared-data:ro"
       ]
     },
-    {
-      "image": "httpd:latest",
-      "instances": 10,
-      "volumes": [
-        "/tmp/:/var/www/"
-      ],
-      "env": [
-        "Test=Test"
-      ],
+    "webserver2": {
+      "pull": true,
+      "image": "nginx:latest",
+      "instances": 5,
+      "randomPorts": [80, 443]
     }
-  ],
-  "logLevel": "info"
+  },
+  "removeIdleJenkinsSlaves": {
+    "enabled": false,
+    "jenkinsMaster": "https://ci.example.com",
+    "username": "user",
+    "password": "pass",
+    "checkInterval": 30,
+    "maxAge": 90
+  },
+  "removeCadavers": {
+    "enabled": false,
+    "checkInterval": 10
+  },
+  "logLevel": "debug"
 }

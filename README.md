@@ -1,6 +1,7 @@
 # Scaler
 
 This docker container lets you spawn sibling containers and monitor them. It scales them up or down, depending on your configuration.
+Scaler has to run on each host where containers should be scaled; each host may have its individual configuration.
 
 ## Dependencies
 
@@ -21,6 +22,12 @@ The easiest way to use this piece of software is `docker-compose`.
 
 You can also run scaler manually like this: `docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $PWD/config:/opt/docker-autoscale/config schweizerischebundesbahnen/docker-autoscale`
 
+### With wzu-docker:
+```
+vi /etc/wzu-docker/_scripts/init-compose/scaler-t-config/config/config.json
+sudo service scaler-t reinit
+```
+
 ## Configuration
 
 The configuration has to be made in JSON and needs to be mounted to _/opt/docker-autoscale/config_ as _config.json_.
@@ -28,23 +35,29 @@ The configuration has to be made in JSON and needs to be mounted to _/opt/docker
 ```javascript
 {
   "scaleInterval": 15, // Interval in seconds to check container scaling.
+  "pullInterval": 15, // Interval in seconds to check container scaling.
   
   "logLevel": "debug", // Loglevel of the scaler.
   
-  "containers": [ // List of containers to run
-    {
-      "pull": true, // You can disable image pulling
+  "containers": { // List of containers to run
+    "test-volume": { // the container id
+      "pull": true, // auto pull new images
+      "image": "xaamin/shared-volume",
+      "isDataContainer": true // enables the data volume handling
+    },
+    "webserver": { // the container id
+      "pull": true,
       "image": "httpd:latest", // Image to run.
       "name" : "test-volume", // Allows you to set a dedictated name, but only for one instance.
       "instances": 5, // Amount of instances to run.
       "volumes": ["/tmp:/var/www/"] // List of volumes to mount.
-      "volumes_from": ["test-volume:ro"], //Use volumes from other images, use the container name.
+      "volumesFrom": ["test-volume:ro"], //Use volumes from other images, use the container id.
       "env": ["HELLO=WORLD"], // Environment variables 
-      "randomPorts": [], // List of randomports to open
+      "randomPorts": [80, 443], // List of randomports to open
       "randomPort": false, // open a dedictated random port
-       "restart": true, // auto restart containers
+      "restart": true // auto restart containers
     }
-  ],
+  },
   "removeIdleJenkinsSlaves": { // auto-remove container nodes from jenkins ci
       "enabled": true,
       "jenkinsMaster": "https://ci.example.com",
@@ -55,7 +68,9 @@ The configuration has to be made in JSON and needs to be mounted to _/opt/docker
     },
     "removeCadavers": { // auto remove exited containers
       "enabled": false,
-      "checkInterval": 30 // seconds
+      "checkInterval": 30, // seconds,
+      "removeDanglingImages": true,
+      "removeDanglingVolumes": true
     },
     "auth": { // authentication on docker hub
       "serveraddress": "https://index.docker.io/v1",

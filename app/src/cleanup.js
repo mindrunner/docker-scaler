@@ -4,13 +4,14 @@ const helper = require('./helper'),
     docker = helper.Docker.getInstance(),
     logger = helper.Logger.getInstance();
 
-exports.Cleanup = function Cleanup() {
+exports.Cleanup = function Cleanup(config) {
     process.on('cleanup', function () {
         logger.info('Cleaning up...');
-
         helper.Timer.clearAll();
+        logger.info('Waiting all processes to finish...');
 
-        if(process.env.CLEANUP && process.env.CLEANUP == "true") {
+        // remove all containers on cleanup
+        if ((process.env.CLEANUP && process.env.CLEANUP == "true") || config.cleanup == true) {
             var listOpts = {
                 all: true,
                 filters: {

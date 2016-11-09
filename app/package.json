@@ -12,7 +12,6 @@
     "asyncawait": "^1.0.6",
     "dockerode": "~2.2",
     "network": "^0.2.1",
-    "portastic": "^1.0.1",
     "request": "^2.75.0",
     "winston": "~2.2"
   }

@@ -13,11 +13,11 @@ var config = require(process.env.CONFIG || './config/config.json');
 
 var scaler = new dockerScaler.DockerScaler(config);
 
+scaler.init();
+
 // Load plugins
 var plugins = fs.readdirSync(path.resolve(__dirname, "plugins"));
 for (var i in plugins) {
     var plugin = require("./plugins/" + plugins[i]);
     scaler.loadPlugin(plugin);
 }
-
-scaler.init();
