@@ -40,15 +40,16 @@ var volumes = async(function (scaler) {
                 throw new hookException("Didn't find data container " + groupId);
             }
 
+            // we need to enable every existing mountpoint of the source container on the target
             for(var j in sourceContainer.Mounts) {
                 var mount = sourceContainer.Mounts[j];
 
-                if(containerConfig.Volumes[mount.Destination] != undefined) {
+                // check if a mountpoint already is in use
+                if(containerConfig.Volumes[mount.Destination] == undefined) {
+                    containerConfig.Volumes[mount.Destination] = {};
+                } else {
                     logger.warn("Mountpoint %s already exists!", mount.Destination);
-                    continue;
                 }
-
-                containerConfig.Volumes[mount.Destination] = {};
             }
 
             containerConfig.VolumesFrom.push(sourceContainer.Id + ":" + fsMode);
