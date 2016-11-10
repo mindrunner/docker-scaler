@@ -42,23 +42,27 @@ removeIdleJenkinsSlaves = function (scaler) {
             logger.info("Found %d containers.", nodes.length);
 
             for (var i in nodes) {
-                var nodeId = nodes[i];
-                var container = await(findContainer(nodeId));
+                try {
+                    var nodeId = nodes[i];
+                    var container = await(findContainer(nodeId));
 
-                if (container == null) {
-                    logger.debug("Container %s is not running on this host... continue...", nodeId);
-                    continue;
+                    if (container == null) {
+                        logger.debug("Container %s is not running on this host... continue...", nodeId);
+                        continue;
+                    }
+
+                    logger.debug("Container %s (%s) is running on this host... checking...", container.Id, nodeId);
+                    var age = Math.floor(Date.now() / 1000) - container.Created;
+                    if (age < scaler.config.removeIdleJenkinsSlaves.maxAge) {
+                        logger.debug("Container %s (Age: %ds) is young enough. Won't kill.", container.Id, age);
+                        continue;
+                    }
+
+                    await(setOldNodeOffline(nodeId));
+                    logger.info("Container %s (Age: %ds) was to old. Set offline.", container.Id, age);
+                } catch (err) {
+                    logger.error(err);
                 }
-
-                logger.debug("Container %s (%s) is running on this host... checking...", container.Id, nodeId);
-                var age = Math.floor(Date.now() / 1000) - container.Created;
-                if (age < scaler.config.removeIdleJenkinsSlaves.maxAge) {
-                    logger.debug("Container %s (Age: %ds) is young enough. Won't kill.", container.Id, age);
-                    continue;
-                }
-
-                await(setOldNodeOffline(nodeId));
-                logger.info("Container %s (Age: %ds) was to old. Set offline.", container.Id, age);
             }
         } catch (err) {
             logger.error(err);
@@ -72,22 +76,26 @@ removeIdleJenkinsSlaves = function (scaler) {
             logger.info("Found %d idle containers.", idleNodes.length);
 
             for (var i in idleNodes) {
-                var idleNodeId = idleNodes[i];
-                var container = await(findContainer(idleNodeId));
+                try {
+                    var idleNodeId = idleNodes[i];
+                    var container = await(findContainer(idleNodeId));
 
-                if (container == null) {
-                    logger.debug("Idle container %s is not running on this host... continue...", idleNodeId);
-                    continue;
-                }
+                    if (container == null) {
+                        logger.debug("Idle container %s is not running on this host... continue...", idleNodeId);
+                        continue;
+                    }
 
-                logger.debug("Idle container %s (%s) is running on this host... Killing...", container.Id, idleNodeId);
-                var containerInfo = await(scaler.inspectContainer(container.Id));
-                await(removeIdleHostFromJenkins(idleNodeId));
-                if (containerInfo.State.Running) {
-                    await(scaler.killContainer(container.Id));
+                    logger.debug("Idle container %s (%s) is running on this host... Killing...", container.Id, idleNodeId);
+                    var containerInfo = await(scaler.inspectContainer(container.Id));
+                    await(removeIdleHostFromJenkins(idleNodeId));
+                    if (containerInfo.State.Running) {
+                        await(scaler.killContainer(container.Id));
+                    }
+                    await(scaler.removeContainer(container.Id));
+                    logger.info("Removed idle container %s.", container.Id)
+                } catch (err) {
+                    logger.error(err);
                 }
-                await(scaler.removeContainer(container.Id));
-                logger.info("Removed idle container %s.", container.Id)
             }
         } catch (err) {
             logger.error(err);
