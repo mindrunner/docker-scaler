@@ -90,7 +90,7 @@ removeIdleJenkinsSlaves = function (scaler) {
                     try {
                         await(removeIdleHostFromJenkins(idleNodeId));
                     } catch (err) {
-                        logger.warn("Container %s not registeres in Jenkins", container.Id)
+                        logger.warn("Container %s not registered in Jenkins", container.Id)
                     }
                     if (containerInfo.State.Running) {
                         await(scaler.killContainer(container.Id));
