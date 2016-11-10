@@ -7,35 +7,63 @@ const async = require('asyncawait/async'),
     logger = helper.Logger.getInstance(),
     docker = helper.Docker.getInstance();
 
-var imagePull = function (scaler) {
+/**
+ * This plugin allows pulling of images
+ */
+class imagePull {
 
-    for(var i in scaler.config.containers) {
-        var containerset = scaler.config.containers[i];
-        pullContainerset(containerset);
+    /**
+     * Constructor
+     *
+     * @param scaler
+     */
+    constructor(scaler) {
+        this.scaler = scaler;
+        this.pluginName = "imagePull";
+
+        for (var i in this.scaler.config.containers) {
+            var containerset = this.scaler.config.containers[i];
+
+            this.pullContainerset(containerset);
+        }
     }
 
-    function pullContainerset(containerset) {
+    /**
+     * Pulls a containerset and starts itself again.
+     *
+     * @param containerset
+     */
+    pullContainerset(containerset) {
+        var self = this;
+
         if(containerset.pull) {
-            pullImage(containerset.image).then(function (image) {
+            this.pullImage(containerset.image).then(function (image) {
                 logger.info("Successfully pulled %s.", image);
                 return image;
             }).catch(function(image, err) {
                 logger.error("Error pulling %s: %s", image, err);
             }).then(function() {
                 helper.Timer.add(function () {
-                    pullContainerset(containerset);
-                }, scaler.config.pullInterval * 1000);
+                    self.pullContainerset(containerset);
+                }, self.scaler.config.pullInterval * 1000);
             });
         }
     }
 
+    /**
+     * Pulls the image and returns the id
+     *
+     * @param image
+     * @returns {Promise}
+     */
+    pullImage(image) {
+        var self = this;
 
-    function pullImage(image) {
         return new Promise(function(resolve, reject) {
             var pullOpts = {};
 
-            if(scaler.config.auth != {}) {
-                pullOpts.authconfig = scaler.config.auth;
+            if(self.scaler.config.auth != {}) {
+                pullOpts.authconfig = self.scaler.config.auth;
             }
             logger.info("Pulling image: %s", image);
 
@@ -64,8 +92,6 @@ var imagePull = function (scaler) {
             });
         });
     }
-};
-
-imagePull.pluginName = "imagePull";
+}
 
 module.exports = imagePull;
