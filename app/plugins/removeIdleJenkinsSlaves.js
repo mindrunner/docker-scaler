@@ -87,7 +87,11 @@ removeIdleJenkinsSlaves = function (scaler) {
 
                     logger.debug("Idle container %s (%s) is running on this host... Killing...", container.Id, idleNodeId);
                     var containerInfo = await(scaler.inspectContainer(container.Id));
-                    await(removeIdleHostFromJenkins(idleNodeId));
+                    try {
+                        await(removeIdleHostFromJenkins(idleNodeId));
+                    } catch (err) {
+                        logger.warn("Container %s not registeres in Jenkins", container.Id)
+                    }
                     if (containerInfo.State.Running) {
                         await(scaler.killContainer(container.Id));
                     }
