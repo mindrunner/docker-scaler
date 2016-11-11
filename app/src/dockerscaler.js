@@ -141,7 +141,7 @@ class DockerScaler {
             for (var i in existingContainers) {
                 var existingContainer = existingContainers[i];
                 logger.debug("%s: existing container %d: %s", self.pluginName, i, existingContainers[i]);
-                logger.debug("%s: existingContainer.imageID: %s", self.pluginName, existingContainer.imageID);
+                logger.debug("%s: existingContainer.imageID: %s", self.pluginName, existingContainer.ImageID);
                 logger.debug("%s: newestImage.Id: %s", self.pluginName, newestImage.Id);
 
                 if (newestImage != null && existingContainer.ImageID == newestImage.Id) {
