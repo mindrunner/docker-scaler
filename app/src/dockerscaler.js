@@ -334,14 +334,14 @@ class DockerScaler {
                             return resolve(image);
                         }
                         // docker 1.10 (need to prepend "docker.io")
-                        if (image.RepoTags.indexOf(repoTag.replace('/^/', 'docker.io\/')) != -1) {
+                        if (image.RepoTags.indexOf(repoTag.replace(/^/, 'docker.io\/')) != -1) {
                             // we found the image, stop and resolve promise
                             logger.debug("%s: image %s match found on older docker version (1.10)", self.pluginName, image.RepoTags);
                             return resolve(image);
                         }
                     }
 
-                    logger.debug("%s: image %s does neither match %s nor %s", self.pluginName, image.RepoTags, repoTag, repoTag.replace('/^/', 'docker.io\/'));
+                    logger.debug("%s: image %s does neither match %s nor %s", self.pluginName, image.RepoTags, repoTag, repoTag.replace(/^/, 'docker.io\/'));
                 }
 
                 // we didn't find anything, resolve with null
