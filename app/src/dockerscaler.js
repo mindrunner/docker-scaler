@@ -72,7 +72,9 @@ class DockerScaler {
                 containerset.image += ":latest";
             }
 
-            // docker.io will be removed from the image string, because docker does that too.
+            // make sure, the imagename does not contain the implicit docker.io registry host, so that we can later
+            // search for both images (with and without host prefix) in getImageByRepoTag. This makes sure we support
+            // old (1.10) and new (1.12) docker versions.
             containerset.image = containerset.image.replace(/^(docker.io\/)/, "");
 
             if (containerset.isDataContainer) {
@@ -128,26 +130,28 @@ class DockerScaler {
             var hasNewestImage = false;
 
             try {
-                logger.debug("%s: looking for newest iamge:", self.pluginName, containerset.image);
+                logger.debug("%s: looking for newest image:", self.pluginName, containerset.image);
                 var newestImage = await(self.getImageByRepoTag(containerset.image));
-                logger.debug("%s: found newest iamge: %s", self.pluginName, newestImage);
+                if (newestImage == null) {
+                    logger.debug("%s: no image found for: %s", self.pluginName, containerset.image);
+                } else {
+                    logger.debug("%s: found newest image: %s", self.pluginName, newestImage);
+                    logger.debug("%s: enumerating existing containers", self.pluginName);
+                    for (var i in existingContainers) {
+                        var existingContainer = existingContainers[i];
+                        logger.debug("%s: existing container %d: %s", self.pluginName, i, existingContainers[i]);
+                        logger.debug("%s: existingContainer.imageID: %s", self.pluginName, existingContainer.ImageID);
+                        logger.debug("%s: newestImage.Id: %s", self.pluginName, newestImage.Id);
+
+                        if (newestImage != null && existingContainer.ImageID == newestImage.Id) {
+                            hasNewestImage = true;
+                            logger.debug("%s: Found a match! Will not spawn new Container!", self.pluginName);
+                        }
+                    }
+                }
             } catch (err) {
                 logger.error("%s: Couldn't find newest image: %s", self.pluginName, err);
                 return;
-            }
-
-
-            logger.debug("%s: enumerating existing containers", self.pluginName);
-            for (var i in existingContainers) {
-                var existingContainer = existingContainers[i];
-                logger.debug("%s: existing container %d: %s", self.pluginName, i, existingContainers[i]);
-                logger.debug("%s: existingContainer.imageID: %s", self.pluginName, existingContainer.ImageID);
-                logger.debug("%s: newestImage.Id: %s", self.pluginName, newestImage.Id);
-
-                if (newestImage != null && existingContainer.ImageID == newestImage.Id) {
-                    hasNewestImage = true
-                    logger.debug("%s: Found a match! Will not spawn new Container!", self.pluginName);
-                }
             }
 
             if (!hasNewestImage) {
@@ -319,7 +323,10 @@ class DockerScaler {
                 for (var i in images) {
                     var image = images[i];
 
-                    if (image.RepoTags != null && image.RepoTags.indexOf(repoTag) != -1) {
+                    if (image.RepoTags != null
+                        && image.RepoTags.indexOf(repoTag) != -1  // docker 1.12
+                        && image.RepoTags.indexOf(repoTag.replace('/^/','docker.io\/')) != -1 ) // docker 1.10 (need to prepend "docker.io")
+                    {
                         // we found the image, stop and resolve promise
                         return resolve(image);
                     }
