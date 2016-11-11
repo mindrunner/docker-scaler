@@ -61,7 +61,6 @@ class imagePull {
 
         return new Promise(function(resolve, reject) {
             var pullOpts = {};
-            var self = this;
 
             if(self.scaler.config.auth != {}) {
                 pullOpts.authconfig = self.scaler.config.auth;
@@ -83,11 +82,11 @@ class imagePull {
                         && event.progressDetail.current != undefined
                         && event.progressDetail.total != undefined) {
                         var percent = Math.round(100 / event.progressDetail.total * event.progressDetail.current);
-                        logger.debug('%s: %s: %s (%d%)', "imagePull", event.id, event.status, percent);
+                        logger.debug('%s: %s: %s (%d%)', self.pluginName, event.id, event.status, percent);
                     } else if(event.id != undefined) {
-                        logger.debug('%s: %s: %s', "imagePull", event.id, event.status);
+                        logger.debug('%s: %s: %s', self.pluginName, event.id, event.status);
                     } else {
-                        logger.debug('%s: %s', "imagePull", event.status);
+                        logger.debug('%s: %s', self.pluginName, event.status);
                     }
                 }
             });
