@@ -313,26 +313,39 @@ class DockerScaler {
      * @returns {Promise}
      */
     getImageByRepoTag(repoTag) {
+        var self = this;
         return new Promise(function (resolve, reject) {
             docker.listImages({}, function (err, images) {
                 if (err) {
+                    logger.debug("%s: error listing images:", self.pluginName, err);
                     return reject(err);
                 }
 
                 // Workaround for docker. They don't support filter by repotag.
                 for (var i in images) {
                     var image = images[i];
-
-                    if (image.RepoTags != null
-                        && image.RepoTags.indexOf(repoTag) != -1  // docker 1.12
-                        && image.RepoTags.indexOf(repoTag.replace('/^/','docker.io\/')) != -1 ) // docker 1.10 (need to prepend "docker.io")
-                    {
-                        // we found the image, stop and resolve promise
-                        return resolve(image);
+                    logger.debug("%s: found image: %s", self.pluginName, image.Id);
+                    logger.debug("%s: with RepoTags: %s", self.pluginName, image.RepoTags);
+                    if (image.RepoTags != null) {
+                        // docker 1.12
+                        if (image.RepoTags.indexOf(repoTag) != -1) {
+                            // we found the image, stop and resolve promise
+                            logger.debug("%s: image %s match found on newer docker version (1.12)", self.pluginName, image.RepoTags);
+                            return resolve(image);
+                        }
+                        // docker 1.10 (need to prepend "docker.io")
+                        if (image.RepoTags.indexOf(repoTag.replace('/^/', 'docker.io\/')) != -1) {
+                            // we found the image, stop and resolve promise
+                            logger.debug("%s: image %s match found on older docker version (1.10)", self.pluginName, image.RepoTags);
+                            return resolve(image);
+                        }
                     }
+
+                    logger.debug("%s: image %s does neither match %s nor %s", self.pluginName, image.RepoTags, repoTag);
                 }
 
-                // we didn't found anything, null
+                // we didn't find anything, resolve with null
+                //TODO: reject?
                 resolve(null);
             });
         });
