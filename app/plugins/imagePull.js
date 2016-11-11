@@ -38,10 +38,10 @@ class imagePull {
 
         if(containerset.pull) {
             this.pullImage(containerset.image).then(function (image) {
-                logger.info("%s: Successfully pulled %s.", this.pluginName, image);
+                logger.info("%s: Successfully pulled %s.", self.pluginName, image);
                 return image;
             }).catch(function(image, err) {
-                logger.error("%s: Error pulling %s: %s", this.pluginName, image, err);
+                logger.error("%s: Error pulling %s: %s", self.pluginName, image, err);
             }).then(function() {
                 helper.Timer.add(function () {
                     self.pullContainerset(containerset);
@@ -61,7 +61,7 @@ class imagePull {
 
         return new Promise(function(resolve, reject) {
             var pullOpts = {};
-            var me = this;
+            var self = this;
 
             if(self.scaler.config.auth != {}) {
                 pullOpts.authconfig = self.scaler.config.auth;
