@@ -66,7 +66,7 @@ class imagePull {
             if(self.scaler.config.auth != {}) {
                 pullOpts.authconfig = self.scaler.config.auth;
             }
-            logger.info("%s: Pulling image: %s", this.pluginName, image);
+            logger.info("%s: Pulling image: %s", self.pluginName, image);
 
             docker.pull(image, pullOpts, function (err, stream) {
                 docker.modem.followProgress(stream, onFinished, onProgress);
