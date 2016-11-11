@@ -341,7 +341,7 @@ class DockerScaler {
                         }
                     }
 
-                    logger.debug("%s: image %s does neither match %s nor %s", self.pluginName, image.RepoTags, repoTag);
+                    logger.debug("%s: image %s does neither match %s nor %s", self.pluginName, image.RepoTags, repoTag, repoTag.replace('/^/', 'docker.io\/'));
                 }
 
                 // we didn't find anything, resolve with null
