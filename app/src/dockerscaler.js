@@ -16,6 +16,7 @@ const fs = require('fs'),
 class DockerScaler {
 
     constructor(config) {
+        this.pluginName = "scaler";
         this.defaultConfig = {
             maxAge: 0, // Max age in seconds after a container should get killed, set 0 to disable
             scaleInterval: 10, // Interval in seconds, to check if enough instances are running
@@ -49,8 +50,9 @@ class DockerScaler {
             beforeCreateLate : []
         };
 
+
         logger.level = this.config.logLevel;
-        logger.debug(this.config);
+        logger.debug("%s: %s", this.pluginName, this.config);
         cleanup.Cleanup(this.config);
     }
 
@@ -99,12 +101,12 @@ class DockerScaler {
                         // to avoid starting to much containers
                         await(self.runContainer(containerset));
                     } catch(err) {
-                        logger.warn(err);
+                        logger.warn("%s: %s", self.pluginName, err);
                     }
                 }
             }
         })).catch(function(err) {
-            logger.error("Couldn't count running containers: %s", err);
+            logger.error("%s: Couldn't count running containers: %s", this.pluginName,  err);
         }).then(function() {
             // restart process when finished
             helper.Timer.add(function () {
@@ -127,7 +129,7 @@ class DockerScaler {
             try {
                 var newestImage = await(self.getImageByRepoTag(containerset.image));
             } catch(err) {
-                logger.error("Couldn't get newest image: %s", err);
+                logger.error("%s: Couldn't get newest image: %s", self.pluginName, err);
                 return;
             }
 
@@ -145,11 +147,11 @@ class DockerScaler {
                     // to avoid starting to much containers
                     await(self.runContainer(containerset));
                 } catch(err) {
-                    logger.warn(err);
+                    logger.warn("%s: %s", self.pluginName, err);
                 }
             }
         })).catch(function(err) {
-            logger.error("Couldn't count running containers: %s", err);
+            logger.error("%s: Couldn't count running containers: %s", self.pluginName, err);
         }).then(function() {
             // restart process when finished
             helper.Timer.add(function () {
@@ -163,18 +165,18 @@ class DockerScaler {
         var self = this;
 
         containerset = JSON.parse(JSON.stringify(containerset)); // copy variable to stop referencing
-        logger.info('Starting instance of %s.', containerset.image);
+        logger.info('%s: Starting instance of %s.', this.pluginName, containerset.image);
 
         return new Promise(function(resolve, reject) {
             self.createContainer(containerset).then(function(newContainer) {
                 self.startContainer(newContainer).then(function() {
                     resolve(newContainer);
                 }).catch(function(err) {
-                    logger.error("Couldn't start %s. Will try in next cycle. Error: %s", containerset.image, err);
+                    logger.error("%s: Couldn't start %s. Will try in next cycle. Error: %s", self.pluginName, containerset.image, err);
                     reject(err);
                 });
             }).catch(function(err) {
-                logger.warn("Couldn't create %s. Will try in next cycle. Error: %s", containerset.image, err);
+                logger.warn("%s: Couldn't create %s. Will try in next cycle. Error: %s", self.pluginName, containerset.image, err);
                 reject(err);
             });
         });
@@ -229,12 +231,13 @@ class DockerScaler {
     }
 
     startContainer(container) {
+        var self = this;
         return new Promise(function(resolve, reject) {
             container.start(null, function(err) {
                 if(err) {
                     return reject(err);
                 }
-                logger.info("Container %s was started.", container.id);
+                logger.info("%s, Container %s was started.", self.pluginName, container.id);
                 resolve();
             });
         });
@@ -248,6 +251,7 @@ class DockerScaler {
      * @returns {Promise}
      */
     getContainerByGroupId(id, all) {
+        var self = this;
         all = all || false;
 
         return new Promise(function(resolve, reject) {
@@ -255,7 +259,7 @@ class DockerScaler {
                 return reject("You need an id.");
             }
 
-            logger.debug('Searching containers with id %s', id);
+            logger.debug('%s: Searching containers with id %s', self.pluginName, id);
 
             // Only search for auto-deployed containers
             var listOpts = {
@@ -501,7 +505,7 @@ class DockerScaler {
     }
 
     loadPlugin(plugin) {
-        logger.info("Found " + plugin.pluginName + " plugin...");
+        logger.info("%s: Found %s plugin...", this.pluginName, plugin.pluginName);
         this.plugins[plugin.pluginName] = new plugin(this);
     }
 

@@ -6,9 +6,9 @@ const helper = require('./helper'),
 
 exports.Cleanup = function Cleanup(config) {
     process.on('cleanup', function () {
-        logger.info('Cleaning up...');
+        logger.info('%s: Cleaning up...', "cleanup");
         helper.Timer.clearAll();
-        logger.info('Waiting all processes to finish...');
+        logger.info('%s: Waiting all processes to finish...', "cleanup");
 
         // remove all containers on cleanup
         if ((process.env.CLEANUP && process.env.CLEANUP == "true") || config.cleanup == true) {

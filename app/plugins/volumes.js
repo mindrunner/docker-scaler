@@ -48,7 +48,7 @@ var volumes = async(function (scaler) {
                 if(containerConfig.Volumes[mount.Destination] == undefined) {
                     containerConfig.Volumes[mount.Destination] = {};
                 } else {
-                    logger.warn("Mountpoint %s already exists!", mount.Destination);
+                    logger.warn("%s: Mountpoint %s already exists!", volumes.pluginName, mount.Destination);
                 }
             }
 

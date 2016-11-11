@@ -36,10 +36,10 @@ removeIdleJenkinsSlaves = function (scaler) {
     });
 
     var checkAge = function () {
-        logger.debug("Checking slaves states...");
+        logger.debug("%s: Checking slaves states...", removeIdleJenkinsSlaves.pluginName);
         try {
             var nodes = await(getNodes());
-            logger.info("Found %d containers.", nodes.length);
+            logger.info("%s: Found %d containers.", removeIdleJenkinsSlaves.pluginName, nodes.length);
 
             for (var i in nodes) {
                 try {
@@ -47,33 +47,33 @@ removeIdleJenkinsSlaves = function (scaler) {
                     var container = await(findContainer(nodeId));
 
                     if (container == null) {
-                        logger.debug("Container %s is not running on this host... continue...", nodeId);
+                        logger.debug("%s: Container %s is not running on removeIdleJenkinsSlaves host... continue...", removeIdleJenkinsSlaves.pluginName, nodeId);
                         continue;
                     }
 
-                    logger.debug("Container %s (%s) is running on this host... checking...", container.Id, nodeId);
+                    logger.debug("%s: Container %s (%s) is running on removeIdleJenkinsSlaves host... checking...", removeIdleJenkinsSlaves.pluginName, container.Id, nodeId);
                     var age = Math.floor(Date.now() / 1000) - container.Created;
                     if (age < scaler.config.removeIdleJenkinsSlaves.maxAge) {
-                        logger.debug("Container %s (Age: %ds) is young enough. Won't kill.", container.Id, age);
+                        logger.debug("%s: Container %s (Age: %ds) is young enough. Won't kill.", removeIdleJenkinsSlaves.pluginName, container.Id, age);
                         continue;
                     }
 
                     await(setOldNodeOffline(nodeId));
-                    logger.info("Container %s (Age: %ds) was to old. Set offline.", container.Id, age);
+                    logger.info("%s: Container %s (Age: %ds) was to old. Set offline.", removeIdleJenkinsSlaves.pluginName, container.Id, age);
                 } catch (err) {
-                    logger.error(err);
+                    logger.error("%s: %s", removeIdleJenkinsSlaves.pluginName, err);
                 }
             }
         } catch (err) {
-            logger.error(err);
+            logger.error("%s: %s", removeIdleJenkinsSlaves.pluginName, err);
         }
     };
 
     var checkIdles = function () {
-        logger.debug("Checking idle slaves...");
+        logger.debug("%s: Checking idle slaves...", removeIdleJenkinsSlaves.pluginName);
         try {
             var idleNodes = await(getIdles());
-            logger.info("Found %d idle containers.", idleNodes.length);
+            logger.info("%s: Found %d idle containers.", removeIdleJenkinsSlaves.pluginName, idleNodes.length);
 
             for (var i in idleNodes) {
                 try {
@@ -81,28 +81,28 @@ removeIdleJenkinsSlaves = function (scaler) {
                     var container = await(findContainer(idleNodeId));
 
                     if (container == null) {
-                        logger.debug("Idle container %s is not running on this host... continue...", idleNodeId);
+                        logger.debug("%s: Idle container %s is not running on removeIdleJenkinsSlaves host... continue...", removeIdleJenkinsSlaves.pluginName, idleNodeId);
                         continue;
                     }
 
-                    logger.debug("Idle container %s (%s) is running on this host... Killing...", container.Id, idleNodeId);
+                    logger.debug("%s: Idle container %s (%s) is running on removeIdleJenkinsSlaves host... Killing...", removeIdleJenkinsSlaves.pluginName, container.Id, idleNodeId);
                     var containerInfo = await(scaler.inspectContainer(container.Id));
                     try {
                         await(removeIdleHostFromJenkins(idleNodeId));
                     } catch (err) {
-                        logger.warn("Container %s not registered in Jenkins", container.Id)
+                        logger.warn("%s: Container %s not registered in Jenkins", removeIdleJenkinsSlaves.pluginName, container.Id)
                     }
                     if (containerInfo.State.Running) {
                         await(scaler.killContainer(container.Id));
                     }
                     await(scaler.removeContainer(container.Id));
-                    logger.info("Removed idle container %s.", container.Id)
+                    logger.info("%s: Removed idle container %s.", removeIdleJenkinsSlaves.pluginName, container.Id)
                 } catch (err) {
-                    logger.error(err);
+                    logger.error("%s: %s", removeIdleJenkinsSlaves.pluginName, err);
                 }
             }
         } catch (err) {
-            logger.error(err);
+            logger.error("%s: %s", removeIdleJenkinsSlaves.pluginName, err);
         }
     };
 

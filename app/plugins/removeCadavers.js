@@ -17,8 +17,8 @@ var removeCadavers = function (scaler) {
     };
     scaler.config.removeCadavers = Object.assign(defaultConfig, scaler.config.removeCadavers);
 
-    var checkCadavers = async(function() {
-        logger.debug("Searching cadavers...");
+    var checkCadavers = async(function () {
+        logger.debug("%s: Searching cadavers...", removeCadavers.pluginName);
 
         var cadavers = []
             .concat(await(getNonRunningByState('created')))
@@ -27,60 +27,60 @@ var removeCadavers = function (scaler) {
 
         cadavers = uniqueArray(cadavers);
 
-        for(var i in cadavers) {
+        for (var i in cadavers) {
             var container = cadavers[i];
 
             try {
-                logger.debug("Removing container %s.", container.Id);
+                logger.debug("%s: Removing container %s.", removeCadavers.pluginName, container.Id);
                 await(scaler.removeContainer(container));
-                logger.info("Removed container %s.", container.Id);
-            } catch(err) {
-                logger.error("Couldn't remove container Error: %s", err);
+                logger.info("%s: Removed container %s.", removeCadavers.pluginName, container.Id);
+            } catch (err) {
+                logger.error("%s: Couldn't remove container Error: %s", removeCadavers.pluginName, err);
             }
 
-            if(container.Labels['data-container'] == 'true') {
+            if (container.Labels['data-container'] == 'true') {
                 for (var j in container.Mounts) {
                     var mount = container.Mounts[j];
 
                     try {
-                        logger.debug("Removing volume %s.", mount.Name);
+                        logger.debug("%s: Removing volume %s.", removeCadavers.pluginName, mount.Name);
                         await(scaler.removeVolume(mount.Name));
-                        logger.info("Removed volume %s.", mount.Name);
-                    } catch(err) {
-                        logger.error("Couldn't remove volume %s. Error: %s", mount.Name, err);
+                        logger.info("%s: Removed volume %s.", removeCadavers.pluginName, mount.Name);
+                    } catch (err) {
+                        logger.error("%s: Couldn't remove volume %s. Error: %s", removeCadavers.pluginName, mount.Name, err);
                     }
                 }
             }
         }
 
-        if(scaler.config.removeCadavers.removeDanglingImages) {
+        if (scaler.config.removeCadavers.removeDanglingImages) {
             var danglingImages = await(getDanglingImages());
 
-            for(var i in danglingImages) {
+            for (var i in danglingImages) {
                 var image = danglingImages[i];
 
                 try {
-                    logger.debug("Removing dangling image %s.", image.Id);
+                    logger.debug("%s: Removing dangling image %s.", removeCadavers.pluginName, image.Id);
                     await(scaler.removeImage(image.Id));
-                    logger.info("Removed dangling image %s.", image.Id);
+                    logger.info("%s: Removed dangling image %s.", removeCadavers.pluginName, image.Id);
                 } catch (err) {
-                    logger.warn("Couldn't remove dangling image %s. Error: %s", image.Id, err);
+                    logger.warn("%s: Couldn't remove dangling image %s. Error: %s", removeCadavers.pluginName, image.Id, err);
                 }
             }
         }
 
-        if(scaler.config.removeCadavers.removeDanglingVolumes) {
+        if (scaler.config.removeCadavers.removeDanglingVolumes) {
             var danglingVolumes = await(getDanglingVolumes());
 
-            for(var i in danglingVolumes) {
+            for (var i in danglingVolumes) {
                 var volume = danglingVolumes[i];
 
                 try {
-                    logger.debug("Removing dangling volume %s.", volume.Name);
+                    logger.debug("%s: Removing dangling volume %s.", removeCadavers.pluginName, volume.Name);
                     await(scaler.removeVolume(volume.Name));
-                    logger.info("Removed dangling volume %s.", volume.Name);
-                } catch(err) {
-                    logger.warn("Couldn't remove dangling volume %s. Error: %s", volume.Name, err);
+                    logger.info("%s: Removed dangling volume %s.", removeCadavers.pluginName, volume.Name);
+                } catch (err) {
+                    logger.warn("%s: Couldn't remove dangling volume %s. Error: %s", removeCadavers.pluginName, volume.Name, err);
                 }
             }
         }
@@ -90,8 +90,8 @@ var removeCadavers = function (scaler) {
         }, scaler.config.removeCadavers.checkInterval * 1000);
     });
 
-    var getNonRunningByState = function(state) {
-        return new Promise(function(resolve, reject) {
+    var getNonRunningByState = function (state) {
+        return new Promise(function (resolve, reject) {
             var listOpts = {
                 all: true,
                 filters: {
@@ -102,28 +102,28 @@ var removeCadavers = function (scaler) {
                     ]
                 }
             };
-            docker.listContainers(listOpts, async(function(err, containers) {
-                if(err) {
+            docker.listContainers(listOpts, async(function (err, containers) {
+                if (err) {
                     return reject(err);
                 }
 
                 var result = [];
-                for(var i in containers) {
+                for (var i in containers) {
                     var container = containers[i];
 
                     // Don't remove data-containers
-                    if(container.Labels['data-container'] == 'true') {
+                    if (container.Labels['data-container'] == 'true') {
                         try {
                             var newestContainer = await(scaler.getNewestContainerByGroupId(container.Labels['group-id']));
 
-                            if(newestContainer.Id != container.Id) {
+                            if (newestContainer.Id != container.Id) {
                                 var dependentContainers = await(getDependentContainers(container.Mounts));
-                                if(dependentContainers.length == 0) {
+                                if (dependentContainers.length == 0) {
                                     result.push(container); // Not the newest and no dependent containers. Remove.
                                 }
                             }
-                        } catch(err) {
-                            logger.warning("Couldn't get dependent containers: %s", err);
+                        } catch (err) {
+                            logger.warning("%s: Couldn't get dependent containers: %s", removeCadavers.pluginName, err);
                         }
                     } else {
                         result.push(container);
@@ -135,16 +135,16 @@ var removeCadavers = function (scaler) {
         });
     };
 
-    var getDanglingImages = function() {
-        return new Promise(function(resolve, reject) {
+    var getDanglingImages = function () {
+        return new Promise(function (resolve, reject) {
             var listOpts = {
                 all: true,
                 filters: {
                     dangling: ['true']
                 }
             };
-            docker.listImages(listOpts, function(err, containers) {
-                if(err) {
+            docker.listImages(listOpts, function (err, containers) {
+                if (err) {
                     return reject(err);
                 }
 
@@ -153,16 +153,16 @@ var removeCadavers = function (scaler) {
         });
     };
 
-    var getDanglingVolumes = function() {
-        return new Promise(function(resolve, reject) {
+    var getDanglingVolumes = function () {
+        return new Promise(function (resolve, reject) {
             var listOpts = {
                 all: true,
                 filters: {
                     dangling: ['true']
                 }
             };
-            docker.listVolumes(listOpts, function(err, volumes) {
-                if(err) {
+            docker.listVolumes(listOpts, function (err, volumes) {
+                if (err) {
                     return reject(err);
                 }
 
@@ -172,41 +172,41 @@ var removeCadavers = function (scaler) {
         });
     };
 
-    var getDependentContainers = function(mounts) {
-        return new Promise(function(resolve, reject) {
+    var getDependentContainers = function (mounts) {
+        return new Promise(function (resolve, reject) {
             // only saving mount ids for easier comparing.
             var mountIds = [];
-            for(var i in mounts) {
+            for (var i in mounts) {
                 var mount = mounts[i];
                 mountIds.push(mount.Name);
             }
-            scaler.getAllRunningContainers().then(function(containers) {
+            scaler.getAllRunningContainers().then(function (containers) {
                 var result = [];
-                for(i in containers) {
+                for (i in containers) {
                     var container = containers[i];
 
-                    for(var j in container.Mounts) {
+                    for (var j in container.Mounts) {
                         mount = container.Mounts[j];
 
-                        if(mountIds.indexOf(mount.Name) != -1) {
+                        if (mountIds.indexOf(mount.Name) != -1) {
                             result.push(container);
                         }
                     }
                 }
                 resolve(result);
-            }).catch(function(err) {
+            }).catch(function (err) {
                 reject(err);
             });
         });
     };
 
-    var uniqueArray = function(xs) {
-        return xs.filter(function(x, i) {
+    var uniqueArray = function (xs) {
+        return xs.filter(function (x, i) {
             return xs.indexOf(x) === i
         })
     };
 
-    if(scaler.config.removeCadavers.enabled) {
+    if (scaler.config.removeCadavers.enabled) {
         checkCadavers();
     }
 };
