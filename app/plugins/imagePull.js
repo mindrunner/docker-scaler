@@ -38,10 +38,10 @@ class imagePull {
 
         if(containerset.pull) {
             this.pullImage(containerset.image).then(function (image) {
-                logger.info("Successfully pulled %s.", image);
+                logger.info("%s: Successfully pulled %s.", self.pluginName, image);
                 return image;
             }).catch(function(image, err) {
-                logger.error("Error pulling %s: %s", image, err);
+                logger.error("%s: Error pulling %s: %s", self.pluginName, image, err);
             }).then(function() {
                 helper.Timer.add(function () {
                     self.pullContainerset(containerset);
@@ -65,7 +65,7 @@ class imagePull {
             if(self.scaler.config.auth != {}) {
                 pullOpts.authconfig = self.scaler.config.auth;
             }
-            logger.info("Pulling image: %s", image);
+            logger.info("%s: Pulling image: %s", self.pluginName, image);
 
             docker.pull(image, pullOpts, function (err, stream) {
                 docker.modem.followProgress(stream, onFinished, onProgress);
@@ -82,11 +82,11 @@ class imagePull {
                         && event.progressDetail.current != undefined
                         && event.progressDetail.total != undefined) {
                         var percent = Math.round(100 / event.progressDetail.total * event.progressDetail.current);
-                        logger.debug('%s: %s (%d%)', event.id, event.status, percent);
+                        logger.debug('%s: %s: %s (%d%)', self.pluginName, event.id, event.status, percent);
                     } else if(event.id != undefined) {
-                        logger.debug('%s: %s', event.id, event.status);
+                        logger.debug('%s: %s: %s', self.pluginName, event.id, event.status);
                     } else {
-                        logger.debug('%s', event.status);
+                        logger.debug('%s: %s', self.pluginName, event.status);
                     }
                 }
             });
