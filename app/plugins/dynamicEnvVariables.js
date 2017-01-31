@@ -45,7 +45,8 @@ var dynamicEnvVariablesPlugin = async(function (scaler) {
             "{{SERVER_VERSION}}": dockerInfo.ServerVersion,
             "{{ARCHITECTURE}}": dockerInfo.Architecture,
             "{{HTTP_PROXY}}": dockerInfo.HttpProxy,
-            "{{HTTPS_PROXY}}": dockerInfo.HttpsProxy
+            "{{HTTPS_PROXY}}": dockerInfo.HttpsProxy,
+            "{{IP}}": "127.0.0.1"
         };
 
         if (fs.existsSync('/.dockerenv')) {
@@ -53,6 +54,23 @@ var dynamicEnvVariablesPlugin = async(function (scaler) {
         } else {
             dynamicVariables['{{HOST_NAME}}'] = os.hostname().split('.')[0];
         }
+
+        var ifaces = os.networkInterfaces();
+
+        Object.keys(ifaces).forEach(function (ifname) {
+            var alias = 0;
+
+            ifaces[ifname].forEach(function (iface) {
+                if ('IPv4' !== iface.family || iface.internal !== false) {
+                    // skip over internal (i.e. 127.0.0.1) and non-ipv4 addresses
+                    return;
+                }
+                if (ifname == 'eth0') {
+                    dynamicVariables['{{IP}}'] = iface.address;
+                }
+                ++alias;
+            });
+        });
 
         return dynamicVariables;
     }
