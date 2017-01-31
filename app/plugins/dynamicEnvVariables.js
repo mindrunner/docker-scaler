@@ -4,7 +4,23 @@ const fs = require('fs'),
     async = require('asyncawait/async'),
     await = require('asyncawait/await'),
     network = require('network'),
-    os = require("os");
+    os = require("os"),
+    request = require('request');
+
+
+var checkIp = new Promise(function (resolve, reject) {
+    request('http://169.254.169.254/latest/meta-data/local-ipv4', function (error, response, body) {
+        console.log("------------------------------------------------------------FIRST");
+        if (!error && response.statusCode == 200) {
+            resolve(body);
+            // dynamicVariables['{{IP}}'] = body;
+        } else {
+            resolve("127.0.0.1");
+            // dynamicVariables['{{IP}}'] = "127.0.0.1";
+        }
+    })
+});
+
 
 var dynamicEnvVariablesPlugin = async(function (scaler) {
     scaler.hooks.beforeCreateLate.push(function (config, args) {
@@ -46,7 +62,6 @@ var dynamicEnvVariablesPlugin = async(function (scaler) {
             "{{ARCHITECTURE}}": dockerInfo.Architecture,
             "{{HTTP_PROXY}}": dockerInfo.HttpProxy,
             "{{HTTPS_PROXY}}": dockerInfo.HttpsProxy,
-            "{{IP}}": "127.0.0.1"
         };
 
         if (fs.existsSync('/.dockerenv')) {
@@ -54,24 +69,17 @@ var dynamicEnvVariablesPlugin = async(function (scaler) {
         } else {
             dynamicVariables['{{HOST_NAME}}'] = os.hostname().split('.')[0];
         }
+        // var sequence = Futures.sequence();
+        // sequence
+        //     .then(function (next) {
+        //         http.get({ host: '169.254.169.254', path: '/latest/meta-data/local-ipv4' }, next);
+        //
+        //
+        //     })
 
-        var ifaces = os.networkInterfaces();
+        dynamicVariables["{{IP}}"] = await(checkIp);
 
-        Object.keys(ifaces).forEach(function (ifname) {
-            var alias = 0;
-
-            ifaces[ifname].forEach(function (iface) {
-                if ('IPv4' !== iface.family || iface.internal !== false) {
-                    // skip over internal (i.e. 127.0.0.1) and non-ipv4 addresses
-                    return;
-                }
-                if (ifname == 'eth0') {
-                    dynamicVariables['{{IP}}'] = iface.address;
-                }
-                ++alias;
-            });
-        });
-
+        console.log("------------------------------------------------------------SECOND");
         return dynamicVariables;
     }
 });
