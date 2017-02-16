@@ -28,7 +28,8 @@ class DockerScaler {
             logLevel: 'info',
             minPort: 40000, //settings for random ports
             maxPort: 50000,
-            auth: {}
+            auth: {},
+            ExtraHosts: []
         };
 
         this.defaultContainersetConfig = {
@@ -40,7 +41,8 @@ class DockerScaler {
             ports: [],
             restart: true,
             volumesFrom: [],
-            isDataContainer: false
+            isDataContainer: false,
+            ExtraHosts: []
         };
 
         this.config = Object.assign(this.defaultConfig, config);
@@ -215,7 +217,8 @@ class DockerScaler {
                 Privileged: containerset.privileged || false,
                 Binds: [],
                 Volumes: {},
-                VolumesFrom: []
+                VolumesFrom: [],
+                ExtraHosts: containerset.ExtraHosts
             };
 
             // Workaround for old versions of scaler @TODO remove when not needed anymore
