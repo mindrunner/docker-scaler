@@ -42,6 +42,9 @@ class DockerScaler {
             restart: true,
             volumesFrom: [],
             isDataContainer: false,
+            Memory: 0,
+            MemorySwap: 0,
+            CpuPercent: 80,
             ExtraHosts: []
         };
 
@@ -215,6 +218,9 @@ class DockerScaler {
                 PortBindings: {},
                 ExposedPorts: {},
                 Privileged: containerset.privileged || false,
+                Memory: containerset.Memory || 0,
+                MemorySwap: containerset.MemorySwap || 0,
+                CpuPercent: containerset.CpuPercent || 80,
                 Binds: [],
                 Volumes: {},
                 VolumesFrom: [],
