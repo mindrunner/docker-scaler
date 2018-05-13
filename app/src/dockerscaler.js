@@ -44,6 +44,7 @@ class DockerScaler {
             isDataContainer: false,
             Memory: 0,
             MemorySwap: 0,
+            NetworkMode: "bridge",
             CpuPercent: 80,
             ExtraHosts: []
         };
@@ -221,6 +222,7 @@ class DockerScaler {
                 Memory: containerset.Memory || 0,
                 MemorySwap: containerset.MemorySwap || 0,
                 CpuPercent: containerset.CpuPercent || 80,
+                NetworkMode: containerset.NetworkMode || "bridge",
                 Binds: [],
                 Volumes: {},
                 VolumesFrom: [],
