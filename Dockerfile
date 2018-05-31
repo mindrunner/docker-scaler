@@ -1,4 +1,4 @@
-FROM alpine:3.4
+FROM alpine
 MAINTAINER Simon Erhardt <simon.erhardt@sbb.ch>
 
 RUN apk add --update \
