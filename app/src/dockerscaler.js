@@ -20,7 +20,7 @@ class DockerScaler {
         this.defaultConfig = {
             maxAge: 0, // Max age in seconds after a container should get killed, set 0 to disable
             scaleInterval: 10, // Interval in seconds, to check if enough instances are running
-            pullInterval: 10, // Interval between pulls in seconds.
+            pullInterval: 1800, // Interval between pulls in seconds.
             ageCheckInterval: 30, // Interval in seconds to check if the age of the running instances
             slowKill: 1, // Amount of containers that get killed at once, if they are to old. Set 0 to disable.
             slowKillWait: 10, // Time in seconds to wait after slowKill, limit was reached. (should be shorter than ageCheckInterval)
@@ -42,6 +42,10 @@ class DockerScaler {
             restart: true,
             volumesFrom: [],
             isDataContainer: false,
+            Memory: 0,
+            MemorySwap: 0,
+            NetworkMode: "bridge",
+            CpuPercent: 80,
             ExtraHosts: []
         };
 
@@ -215,6 +219,10 @@ class DockerScaler {
                 PortBindings: {},
                 ExposedPorts: {},
                 Privileged: containerset.privileged || false,
+                Memory: containerset.Memory || 0,
+                MemorySwap: containerset.MemorySwap || 0,
+                CpuPercent: containerset.CpuPercent || 80,
+                NetworkMode: containerset.NetworkMode || "bridge",
                 Binds: [],
                 Volumes: {},
                 VolumesFrom: [],
