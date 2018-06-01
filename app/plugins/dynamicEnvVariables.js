@@ -5,7 +5,8 @@ const fs = require('fs'),
     await = require('asyncawait/await'),
     network = require('network'),
     os = require("os"),
-    request = require('request');
+    request = require('request'),
+    dns = require('dns');
 
 
 var checkIp = new Promise(function (resolve, reject) {
@@ -76,9 +77,17 @@ var dynamicEnvVariablesPlugin = async(function (scaler) {
         //
         //
         //     })
+        if (fs.existsSync('/.dockerenv')) {
+            dns.lookup(dockerInfo.Name, function (err, addresses, family) {
+                dynamicVariables["{{IP}}"] = addresses;
+            });
+        }else{
+            dns.lookup(os.hostname(), function (err, addresses, family) {
+                dynamicVariables["{{IP}}"] = addresses;
+            });
+        }
 
-        dynamicVariables["{{IP}}"] = await(checkIp);
-
+        //            dynamicVariables["{{IP}}"] = await(checkIp);
         console.log("------------------------------------------------------------SECOND");
         return dynamicVariables;
     }
