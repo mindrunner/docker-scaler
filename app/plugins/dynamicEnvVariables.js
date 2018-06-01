@@ -8,7 +8,7 @@ const fs = require('fs'),
     request = require('request'),
     dns = require('dns');
 
-
+/*
 var checkIp = new Promise(function (resolve, reject) {
     request('http://169.254.169.254/latest/meta-data/local-ipv4', function (error, response, body) {
         console.log("------------------------------------------------------------FIRST");
@@ -21,7 +21,7 @@ var checkIp = new Promise(function (resolve, reject) {
         }
     })
 });
-
+*/
 
 var dynamicEnvVariablesPlugin = async(function (scaler) {
     scaler.hooks.beforeCreateLate.push(function (config, args) {
@@ -58,6 +58,7 @@ var dynamicEnvVariablesPlugin = async(function (scaler) {
 
     function getDynamicVariables() {
         var dockerInfo = await(scaler.getDockerInfo());
+        var ipAddress;
         var dynamicVariables = {
             "{{SERVER_VERSION}}": dockerInfo.ServerVersion,
             "{{ARCHITECTURE}}": dockerInfo.Architecture,
@@ -77,16 +78,40 @@ var dynamicEnvVariablesPlugin = async(function (scaler) {
         //
         //
         //     })
-        if (fs.existsSync('/.dockerenv')) {
-            dns.lookup(dockerInfo.Name, function (err, addresses, family) {
-                dynamicVariables["{{IP}}"] = addresses;
-            });
-        }else{
-            dns.lookup(os.hostname(), function (err, addresses, family) {
-                dynamicVariables["{{IP}}"] = addresses;
-            });
-        }
 
+        /*
+        var dnscallback = function(err,addresses,family) {
+            console.log("Got IP: "+ addresses);
+            dynamicVariables["{{IP}}"] = addresses;
+        };
+
+        if (fs.existsSync('/.dockerenv')) {
+            console.log("trying to resolve IP with hostname from dockerinfo");
+            dns.lookup(dockerInfo.Name, await(dnscallback));
+        }else{
+            console.log("trying to resolve IP with hostname");
+            dns.lookup(os.hostname(), await(dnscallback));
+        }
+*/
+        var checkIp = new Promise(function (resolve, reject) {
+            if (fs.existsSync('/.dockerenv')) {
+                console.log("trying to resolve IP with hostname from dockerinfo");
+                dns.lookup(dockerInfo.Name, function (err, addresses, family) {
+                    console.log("Got IP: "+ addresses);
+                    resolve(addresses);
+                });
+            }else {
+                console.log("trying to resolve IP with hostname");
+                dns.lookup(os.hostname(), function (err, addresses, family) {
+                    console.log("Got IP: "+ addresses);
+                    resolve(addresses);
+                });
+            }
+        });
+
+        dynamicVariables["{{IP}}"] = await(checkIp);
+
+        console.log("dynamicVariables[\"{{IP}}\"] is: " + dynamicVariables["{{IP}}"]);
         //            dynamicVariables["{{IP}}"] = await(checkIp);
         console.log("------------------------------------------------------------SECOND");
         return dynamicVariables;
