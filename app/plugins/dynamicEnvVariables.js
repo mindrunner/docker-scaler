@@ -58,7 +58,6 @@ var dynamicEnvVariablesPlugin = async(function (scaler) {
 
     function getDynamicVariables() {
         var dockerInfo = await(scaler.getDockerInfo());
-        var ipAddress;
         var dynamicVariables = {
             "{{SERVER_VERSION}}": dockerInfo.ServerVersion,
             "{{ARCHITECTURE}}": dockerInfo.Architecture,
@@ -79,20 +78,6 @@ var dynamicEnvVariablesPlugin = async(function (scaler) {
         //
         //     })
 
-        /*
-        var dnscallback = function(err,addresses,family) {
-            console.log("Got IP: "+ addresses);
-            dynamicVariables["{{IP}}"] = addresses;
-        };
-
-        if (fs.existsSync('/.dockerenv')) {
-            console.log("trying to resolve IP with hostname from dockerinfo");
-            dns.lookup(dockerInfo.Name, await(dnscallback));
-        }else{
-            console.log("trying to resolve IP with hostname");
-            dns.lookup(os.hostname(), await(dnscallback));
-        }
-*/
         var checkIp = new Promise(function (resolve, reject) {
             if (fs.existsSync('/.dockerenv')) {
                 console.log("trying to resolve IP with hostname from dockerinfo");
@@ -111,8 +96,6 @@ var dynamicEnvVariablesPlugin = async(function (scaler) {
 
         dynamicVariables["{{IP}}"] = await(checkIp);
 
-        console.log("dynamicVariables[\"{{IP}}\"] is: " + dynamicVariables["{{IP}}"]);
-        //            dynamicVariables["{{IP}}"] = await(checkIp);
         console.log("------------------------------------------------------------SECOND");
         return dynamicVariables;
     }
