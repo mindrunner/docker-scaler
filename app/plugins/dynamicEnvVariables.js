@@ -8,20 +8,9 @@ const fs = require('fs'),
     request = require('request'),
     dns = require('dns');
 
-/*
-var checkIp = new Promise(function (resolve, reject) {
-    request('http://169.254.169.254/latest/meta-data/local-ipv4', function (error, response, body) {
-        console.log("------------------------------------------------------------FIRST");
-        if (!error && response.statusCode == 200) {
-            resolve(body);
-            // dynamicVariables['{{IP}}'] = body;
-        } else {
-            resolve("127.0.0.1");
-            // dynamicVariables['{{IP}}'] = "127.0.0.1";
-        }
-    })
-});
-*/
+
+
+
 
 var dynamicEnvVariablesPlugin = async(function (scaler) {
     scaler.hooks.beforeCreateLate.push(function (config, args) {
@@ -64,36 +53,33 @@ var dynamicEnvVariablesPlugin = async(function (scaler) {
             "{{HTTP_PROXY}}": dockerInfo.HttpProxy,
             "{{HTTPS_PROXY}}": dockerInfo.HttpsProxy,
         };
-
+        var checkIp = new Promise(function (resolve, reject) {
+            request('http://169.254.169.254/latest/meta-data/local-ipv4', function (error, response, body) {
+                console.log("------------------------------------------------------------FIRST");
+                if (!error && response.statusCode == 200) {
+                    resolve(body);
+                } else {
+                    if (fs.existsSync('/.dockerenv')) {
+                        console.log("trying to resolve IP with hostname from dockerinfo");
+                        dns.lookup(dockerInfo.Name, function (err, addresses, family) {
+                            console.log("Got IP: "+ addresses);
+                            resolve(addresses);
+                        });
+                    }else {
+                        console.log("trying to resolve IP with hostname");
+                        dns.lookup(os.hostname(), function (err, addresses, family) {
+                            console.log("Got IP: "+ addresses);
+                            resolve(addresses);
+                        });
+                    }
+                }
+            })
+        });
         if (fs.existsSync('/.dockerenv')) {
             dynamicVariables['{{HOST_NAME}}'] = dockerInfo.Name.split('.')[0];
         } else {
             dynamicVariables['{{HOST_NAME}}'] = os.hostname().split('.')[0];
         }
-        // var sequence = Futures.sequence();
-        // sequence
-        //     .then(function (next) {
-        //         http.get({ host: '169.254.169.254', path: '/latest/meta-data/local-ipv4' }, next);
-        //
-        //
-        //     })
-
-        var checkIp = new Promise(function (resolve, reject) {
-            if (fs.existsSync('/.dockerenv')) {
-                console.log("trying to resolve IP with hostname from dockerinfo");
-                dns.lookup(dockerInfo.Name, function (err, addresses, family) {
-                    console.log("Got IP: "+ addresses);
-                    resolve(addresses);
-                });
-            }else {
-                console.log("trying to resolve IP with hostname");
-                dns.lookup(os.hostname(), function (err, addresses, family) {
-                    console.log("Got IP: "+ addresses);
-                    resolve(addresses);
-                });
-            }
-        });
-
         dynamicVariables["{{IP}}"] = await(checkIp);
 
         console.log("------------------------------------------------------------SECOND");
