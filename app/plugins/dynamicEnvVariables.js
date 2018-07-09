@@ -53,14 +53,15 @@ const dynamicEnvVariablesPlugin = function (scaler) {
 
         const options = {
             uri: 'http://169.254.169.254/latest/meta-data/local-ipv4',
-            resolveWithFullResponse: true
+            resolveWithFullResponse: true,
+            timeout: 1000
         };
 
 
         const dnsLookup = async (name) => {
             dns.lookup(name)
                 .then((addresses) => {
-                    logger.info("Got IP: " + addresses);
+                    logger.info("Got IP: " + addresses.address);
                     return addresses;
                 }).catch((err) => {
                 throw err
