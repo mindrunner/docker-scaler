@@ -97,12 +97,14 @@ const dynamicEnvVariablesPlugin = function (scaler) {
         let hostname = "localhost";
 
         if (fs.existsSync('/.dockerenv')) {
+            logger.debug("Found docker environment, Hostname: %s", dockerInfo.Name);
             hostname = dockerInfo.Name;
         } else {
+            logger.debug("Found non-docker environment, Hostname: %s", os.hostname());
             hostname = os.hostname();
         }
 
-        if(hostname.contains(".")) {
+        if(hostname.indexOf(".") > -1) {
             dynamicVariables['{{HOST_NAME}}'] = hostname.split('.')[0];
         } else {
             dynamicVariables['{{HOST_NAME}}'] = hostname;
