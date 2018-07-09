@@ -3,7 +3,8 @@ MAINTAINER Lukas Elsner <lukas.elsner@sbb.ch>
 
 RUN apk add --update \
   tini \
-  nodejs-lts \
+  nodejs \
+  npm \
   python \
   make \
   g++ \
