@@ -94,16 +94,24 @@ const dynamicEnvVariablesPlugin = function (scaler) {
             });
         };
 
+        let hostname = "localhost";
 
         if (fs.existsSync('/.dockerenv')) {
-            dynamicVariables['{{HOST_NAME}}'] = dockerInfo.Name.split('.')[0];
+            hostname = dockerInfo.Name;
         } else {
-            dynamicVariables['{{HOST_NAME}}'] = os.hostname().split('.')[0];
+            hostname = os.hostname();
+        }
+
+        if(hostname.contains(".")) {
+            dynamicVariables['{{HOST_NAME}}'] = hostname.split('.')[0];
+        } else {
+            dynamicVariables['{{HOST_NAME}}'] = hostname;
         }
 
         try {
-            dynamicVariables["{{IP}}"] = await
-            checkIp();
+            dynamicVariables["{{IP}}"] = async () => {
+                await checkIp()
+            };
         } catch (e) {
             logger.error("Could not resolve hostname: %s", e);
         }
