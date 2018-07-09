@@ -1,9 +1,11 @@
 'use strict';
 
 const fs = require('fs'),
+    helper = require('../src/helper'),
     os = require("os"),
     request = require('request-promise-native'),
-    dns = require('dns').promises;
+    dns = require('dns').promises,
+    logger = helper.Logger.getInstance();
 
 
 const dynamicEnvVariablesPlugin = function (scaler) {
@@ -58,7 +60,7 @@ const dynamicEnvVariablesPlugin = function (scaler) {
         const dnsLookup = async (name) => {
             dns.lookup(name)
                 .then((addresses) => {
-                    console.log("Got IP: " + addresses);
+                    logger.info("Got IP: " + addresses);
                     return addresses;
                 }).catch((err) => {
                 throw err
@@ -71,15 +73,21 @@ const dynamicEnvVariablesPlugin = function (scaler) {
                     return response.body;
                 } else {
                     if (fs.existsSync('/.dockerenv')) {
-                        console.log("trying to resolve IP with hostname from dockerinfo");
+                        logger.info("trying to resolve IP with hostname from dockerinfo");
                         return dnsLookup(dockerInfo.Name);
                     } else {
-                        console.log("trying to resolve IP with hostname");
+                        logger.info("trying to resolve IP with hostname");
                         return dnsLookup(os.hostname());
                     }
                 }
-            }).catch((err) => {
-                throw err;
+            }).catch(() => {
+                if (fs.existsSync('/.dockerenv')) {
+                    logger.info("trying to resolve IP with hostname from dockerinfo");
+                    return dnsLookup(dockerInfo.Name);
+                } else {
+                    logger.info("trying to resolve IP with hostname");
+                    return dnsLookup(os.hostname());
+                }
             });
         };
 
@@ -88,7 +96,12 @@ const dynamicEnvVariablesPlugin = function (scaler) {
         } else {
             dynamicVariables['{{HOST_NAME}}'] = os.hostname().split('.')[0];
         }
-        dynamicVariables["{{IP}}"] = await checkIp();
+        try {
+            dynamicVariables["{{IP}}"] = await checkIp();
+        } catch (e) {
+            logger.info("Could not resolve hostname: %s", e);
+
+        }
         return dynamicVariables;
     }
 };
