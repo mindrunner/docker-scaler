@@ -1,16 +1,11 @@
 'use strict';
 
-const fs = require('fs'),
-    async = require('asyncawait/async'),
-    await = require('asyncawait/await'),
-    network = require('network');
-
-var assignRandomPortPlugin = async(function (scaler) {
+const assignRandomPortPlugin = function (scaler) {
     scaler.hooks.beforeCreate.push(function (config, args) {
-        var container = args[1],
+        const container = args[1],
             containerConfig = args[2];
-        if (container.randomPort != undefined && container.randomPort) {
-            var randomPort = Math.floor(Math.random() * (config.maxPort - config.minPort + 1) + config.minPort);
+        if (container.randomPort !== undefined && container.randomPort) {
+            const randomPort = Math.floor(Math.random() * (config.maxPort - config.minPort + 1) + config.minPort);
             containerConfig.PortBindings[randomPort + "/tcp"] = [{
                 HostIp: "0.0.0.0",
                 HostPort: randomPort.toString()
@@ -19,10 +14,10 @@ var assignRandomPortPlugin = async(function (scaler) {
             containerConfig.Env.push("RANDOM_PORT=" + randomPort);
         }
 
-        if (container.randomPorts != undefined && Array.isArray(container.randomPorts)) {
-            for (var i in container.randomPorts) {
-                var irandomPort = Math.floor(Math.random() * (config.maxPort - config.minPort + 1) + config.minPort);
-                var port = container.randomPorts[i] + "/tcp";
+        if (container.randomPorts !== undefined && Array.isArray(container.randomPorts)) {
+            for (const i in container.randomPorts) {
+                const irandomPort = Math.floor(Math.random() * (config.maxPort - config.minPort + 1) + config.minPort);
+                const port = container.randomPorts[i] + "/tcp";
                 containerConfig.PortBindings[port + "/tcp"] = [{
                     HostIp: "0.0.0.0",
                     HostPort: irandomPort.toString()
@@ -32,7 +27,7 @@ var assignRandomPortPlugin = async(function (scaler) {
             }
         }
     });
-});
+};
 
 assignRandomPortPlugin.pluginName = "assignRandomPort";
 

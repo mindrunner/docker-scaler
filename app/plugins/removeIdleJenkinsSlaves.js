@@ -9,7 +9,7 @@ const
 // Use this to debug HTTP Requests
 // require('request-debug')(request);
 
-let removeIdleJenkinsSlaves = function (scaler) {
+const removeIdleJenkinsSlaves = function (scaler) {
     const getIdleSlavesJenkinsScript = function () {
         return `import hudson.FilePath
 import hudson.model.Node

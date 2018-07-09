@@ -1,8 +1,6 @@
 'use strict';
 
-const async = require('asyncawait/async'),
-    await = require('asyncawait/await'),
-
+const
     helper = require('../src/helper'),
     logger = helper.Logger.getInstance(),
     docker = helper.Docker.getInstance();
@@ -21,9 +19,8 @@ class imagePull {
         this.scaler = scaler;
         this.pluginName = "imagePull";
 
-        for (var i in this.scaler.config.containers) {
-            var containerset = this.scaler.config.containers[i];
-
+        for (const i in this.scaler.config.containers) {
+            const containerset = this.scaler.config.containers[i];
             this.pullContainerset(containerset);
         }
     }
@@ -34,7 +31,7 @@ class imagePull {
      * @param containerset
      */
     pullContainerset(containerset) {
-        var self = this;
+        const self = this;
 
         if (containerset.pull) {
             this.pullImage(containerset.image).then(function (image) {
@@ -57,12 +54,12 @@ class imagePull {
      * @returns {Promise}
      */
     pullImage(image) {
-        var self = this;
+        const self = this;
 
         return new Promise(function (resolve, reject) {
-            var pullOpts = {};
+            const pullOpts = {};
 
-            if (self.scaler.config.auth != {}) {
+            if (self.scaler.config.auth !== {}) {
                 pullOpts.authconfig = self.scaler.config.auth;
             }
             logger.info("%s: Pulling image: %s", self.pluginName, image);
@@ -72,7 +69,6 @@ class imagePull {
                     docker.modem.followProgress(stream, onFinished, onProgress);
                 }
 
-
                 function onFinished(err, output) {
                     if (err) {
                         return reject(image, err);
@@ -81,21 +77,22 @@ class imagePull {
                 }
 
                 function onProgress(event) {
-                    if (event.progressDetail != undefined
-                        && event.progressDetail.current != undefined
-                        && event.progressDetail.total != undefined) {
-                        var percent = Math.round(100 / event.progressDetail.total * event.progressDetail.current);
+                    if (event.progressDetail !== undefined
+                        && event.progressDetail.current !== undefined
+                        && event.progressDetail.total !== undefined) {
+                        const percent = Math.round(100 / event.progressDetail.total * event.progressDetail.current);
                         logger.debug('%s: %s: %s (%d%)', self.pluginName, event.id, event.status, percent);
-                    } else if (event.id != undefined) {
+                    } else if (event.id !== undefined) {
                         logger.debug('%s: %s: %s', self.pluginName, event.id, event.status);
                     } else {
                         logger.debug('%s: %s', self.pluginName, event.status);
                     }
                 }
-
             });
         });
     }
 }
+
+imagePull.pluginName = "imagePull";
 
 module.exports = imagePull;

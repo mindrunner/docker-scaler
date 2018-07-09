@@ -9,15 +9,15 @@ if (!fs.existsSync('./config/config.json')) {
     throw new Error("config/config.json does not exist.");
 }
 
-var config = require(process.env.CONFIG || './config/config.json');
+const config = require(process.env.CONFIG || './config/config.json');
 
-var scaler = new dockerScaler.DockerScaler(config);
+const scaler = new dockerScaler.DockerScaler(config);
 
 scaler.init();
 
 // Load plugins
-var plugins = fs.readdirSync(path.resolve(__dirname, "plugins"));
-for (var i in plugins) {
-    var plugin = require("./plugins/" + plugins[i]);
+const plugins = fs.readdirSync(path.resolve(__dirname, "plugins"));
+for (const i in plugins) {
+    const plugin = require("./plugins/" + plugins[i]);
     scaler.loadPlugin(plugin);
 }

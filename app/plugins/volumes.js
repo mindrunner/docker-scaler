@@ -1,27 +1,24 @@
 'use strict';
 
-const async = require('asyncawait/async'),
-    await = require('asyncawait/await'),
-
+const
     helper = require('../src/helper'),
     hookException = require('../src/exceptions/hookException'),
-
     logger = helper.Logger.getInstance();
 
-var volumes = async(function (scaler) {
-    scaler.hooks.beforeCreate.push(function (config, args) {
-        var container = args[1],
+const volumes = function (scaler) {
+    scaler.hooks.beforeCreate.push(async function (config, args) {
+        const container = args[1],
             containerConfig = args[2];
 
-        var fsMode;
-        for(var i in container.volumes) {
-            var volume = container.volumes[i].split(":"),
+        let fsMode;
+        for (let i in container.volumes) {
+            const volume = container.volumes[i].split(":"),
                 volumeFrom = volume[0],
                 volumeTo = volume[1] || null;
 
             fsMode = volume[2] || "rw";
 
-            if(volumeTo != null) {
+            if (volumeTo != null) {
                 containerConfig.Volumes[volumeTo] = {};
                 containerConfig.Binds.push(volumeFrom + ":" + volumeTo + ":" + fsMode);
             } else {
@@ -29,23 +26,23 @@ var volumes = async(function (scaler) {
             }
         }
 
-        for(i in container.volumesFrom) {
-            var volumesFrom = container.volumesFrom[i].split(":"),
+        for (let i in container.volumesFrom) {
+            const volumesFrom = container.volumesFrom[i].split(":"),
                 groupId = volumesFrom[0];
 
             fsMode = volumesFrom[1] || "rw";
 
-            var sourceContainer = await(scaler.getNewestContainerByGroupId(groupId));
-            if(sourceContainer == null) {
+            const sourceContainer = await scaler.getNewestContainerByGroupId(groupId);
+            if (sourceContainer == null) {
                 throw new hookException("Didn't find data container " + groupId);
             }
 
             // we need to enable every existing mountpoint of the source container on the target
-            for(var j in sourceContainer.Mounts) {
-                var mount = sourceContainer.Mounts[j];
+            for (const j in sourceContainer.Mounts) {
+                const mount = sourceContainer.Mounts[j];
 
                 // check if a mountpoint already is in use
-                if(containerConfig.Volumes[mount.Destination] == undefined) {
+                if (containerConfig.Volumes[mount.Destination] === undefined) {
                     containerConfig.Volumes[mount.Destination] = {};
                 } else {
                     logger.warn("%s: Mountpoint %s already exists!", volumes.pluginName, mount.Destination);
@@ -55,7 +52,7 @@ var volumes = async(function (scaler) {
             containerConfig.VolumesFrom.push(sourceContainer.Id + ":" + fsMode);
         }
     });
-});
+};
 
 volumes.pluginName = "volumes";
 

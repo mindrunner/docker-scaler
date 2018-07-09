@@ -79,7 +79,7 @@ exports.Timer = (function () {
 })();
 
 exports.removeContainer = function (containerId) {
-    var docker = exports.Docker.getInstance(),
+    const docker = exports.Docker.getInstance(),
         logger = exports.Logger.getInstance(),
         container = docker.getContainer(containerId);
 
