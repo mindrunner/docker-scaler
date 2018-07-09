@@ -4,7 +4,8 @@ const fs = require('fs'),
     helper = require('../src/helper'),
     os = require("os"),
     request = require('request-promise-native'),
-    dns = require('dns').promises,
+    dns = require('dns'),
+    dnsPromises = dns.promises,
     logger = helper.Logger.getInstance();
 
 
@@ -59,13 +60,13 @@ const dynamicEnvVariablesPlugin = function (scaler) {
 
 
         const dnsLookup = async (name) => {
-            dns.resolve(name)
-                .then((addresses) => {
-                    logger.info("Got IP: " + addresses.address);
-                    return addresses;
+            return dnsPromises.lookup(name)
+                .then((result) => {
+                    logger.info("Got IP: " + result.address);
+                    return result.address;
                 }).catch((err) => {
-                throw err
-            });
+                    throw err;
+                });
         };
 
         const checkIp = async () => {
