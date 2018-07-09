@@ -43,8 +43,10 @@ const dynamicEnvVariablesPlugin = function (scaler) {
         return string;
     }
 
-    async function getDynamicVariables() {
-        const dockerInfo = await scaler.getDockerInfo();
+    function getDynamicVariables() {
+        const dockerInfo = async () => {
+            return await scaler.getDockerInfo()
+        };
         const dynamicVariables = {
             "{{SERVER_VERSION}}": dockerInfo.ServerVersion,
             "{{ARCHITECTURE}}": dockerInfo.Architecture,
@@ -93,7 +95,6 @@ const dynamicEnvVariablesPlugin = function (scaler) {
         };
 
 
-
         if (fs.existsSync('/.dockerenv')) {
             dynamicVariables['{{HOST_NAME}}'] = dockerInfo.Name.split('.')[0];
         } else {
@@ -101,7 +102,8 @@ const dynamicEnvVariablesPlugin = function (scaler) {
         }
 
         try {
-            dynamicVariables["{{IP}}"] = await checkIp();
+            dynamicVariables["{{IP}}"] = await
+            checkIp();
         } catch (e) {
             logger.error("Could not resolve hostname: %s", e);
         }
