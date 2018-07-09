@@ -1,5 +1,5 @@
 FROM alpine
-MAINTAINER Simon Erhardt <simon.erhardt@sbb.ch>
+MAINTAINER Lukas Elsner <lukas.elsner@sbb.ch>
 
 RUN apk add --update \
   tini \
