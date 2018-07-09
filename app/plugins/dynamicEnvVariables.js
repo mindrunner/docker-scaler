@@ -58,7 +58,6 @@ const dynamicEnvVariablesPlugin = function (scaler) {
             timeout: 1000
         };
 
-
         const dnsLookup = async (name) => {
             return dnsPromises.lookup(name)
                 .then((result) => {
@@ -93,16 +92,18 @@ const dynamicEnvVariablesPlugin = function (scaler) {
             });
         };
 
+
+
         if (fs.existsSync('/.dockerenv')) {
             dynamicVariables['{{HOST_NAME}}'] = dockerInfo.Name.split('.')[0];
         } else {
             dynamicVariables['{{HOST_NAME}}'] = os.hostname().split('.')[0];
         }
+
         try {
             dynamicVariables["{{IP}}"] = await checkIp();
         } catch (e) {
             logger.error("Could not resolve hostname: %s", e);
-
         }
         return dynamicVariables;
     }

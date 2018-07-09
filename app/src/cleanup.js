@@ -10,18 +10,16 @@ exports.Cleanup = function Cleanup(config) {
         helper.Timer.clearAll();
         logger.info('%s: Waiting all processes to finish...', "cleanup");
 
-        // remove all containers on cleanup
-        if ((process.env.CLEANUP && process.env.CLEANUP == "true") || config.cleanup == true) {
-            var listOpts = {
+        if ((process.env.CLEANUP && process.env.CLEANUP === "true") || config.cleanup === true) {
+            const listOpts = {
                 all: true,
                 filters: {
                     label: ['auto-deployed']
                 }
             };
             docker.listContainers(listOpts, function (err, containers) {
-                for (var i in containers) {
-                    var container = containers[i];
-
+                for (const i in containers) {
+                    const container = containers[i];
                     helper.removeContainer(container.Id);
                 }
             });
