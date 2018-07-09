@@ -1,21 +1,12 @@
-FROM alpine
+FROM node:alpine
 MAINTAINER Lukas Elsner <lukas.elsner@sbb.ch>
 
 RUN apk add --update \
   tini \
-  nodejs \
-  npm \
-  python \
-  make \
-  g++ \
   && rm -rf /var/cache/apk/*
 
 COPY app /opt/docker-autoscale
 RUN cd /opt/docker-autoscale && npm install
-
-RUN apk del python \
-  make \
-  g++
 
 ENTRYPOINT ["/sbin/tini", "--"]
 
