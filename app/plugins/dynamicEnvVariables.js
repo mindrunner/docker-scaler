@@ -100,7 +100,7 @@ const dynamicEnvVariablesPlugin = function (scaler) {
         try {
             dynamicVariables["{{IP}}"] = await checkIp();
         } catch (e) {
-            logger.info("Could not resolve hostname: %s", e);
+            logger.error("Could not resolve hostname: %s", e);
 
         }
         return dynamicVariables;
