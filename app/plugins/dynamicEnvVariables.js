@@ -59,7 +59,7 @@ const dynamicEnvVariablesPlugin = function (scaler) {
 
 
         const dnsLookup = async (name) => {
-            dns.lookup(name)
+            dns.resolve(name)
                 .then((addresses) => {
                     logger.info("Got IP: " + addresses.address);
                     return addresses;
