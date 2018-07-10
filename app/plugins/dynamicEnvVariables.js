@@ -6,7 +6,6 @@ const fs = require('fs'),
     request = require('request-promise-native'),
     dns = require('dns'),
     dnsPromises = dns.promises,
-    util = require('util'),
     logger = helper.Logger.getInstance();
 
 

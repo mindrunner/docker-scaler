@@ -2,6 +2,7 @@
 
 const
     helper = require('../src/helper'),
+    util = require('util'),
     logger = helper.Logger.getInstance(),
     docker = helper.Docker.getInstance();
 
@@ -58,13 +59,29 @@ class imagePull {
 
         const pullOpts = {};
 
-        if (self.scaler.config.auth !== {}) {
-            pullOpts.authconfig = self.scaler.config.auth;
-        }
+        // if (self.scaler.config.auth !== {}) {
+        //     pullOpts.authconfig = self.scaler.config.auth;
+        // }
         logger.info("%s: Pulling image: %s", self.pluginName, image);
 
         const stream = await docker.pull(image, pullOpts);
-        stream.on('data', (data) => logger.debug(data));
+
+        stream.on('data', (data) => {
+            let event = JSON.parse(data);
+            // logger.debug(event);
+            // logger.info(util.inspect(event, {showHidden: false, depth: null}));
+
+            if (event.progressDetail !== undefined
+                && event.progressDetail.current !== undefined
+                && event.progressDetail.total !== undefined) {
+                const percent = Math.round(100 / event.progressDetail.total * event.progressDetail.current);
+                logger.debug('%s: %s: %s (%d%)', self.pluginName, event.id, event.status, percent);
+            } else if (event.id !== undefined) {
+                logger.debug('%s: %s: %s', self.pluginName, event.id, event.status);
+            } else {
+                logger.debug('%s: %s', self.pluginName, event.status);
+            }
+        });
         stream.on('end', () => logger.info(`End pulling ${image}`));
     }
 }
