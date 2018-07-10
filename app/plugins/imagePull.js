@@ -53,42 +53,40 @@ class imagePull {
      * @param image
      * @returns {Promise}
      */
-    pullImage(image) {
+    async pullImage(image) {
         const self = this;
 
-        return new Promise(function (resolve, reject) {
-            const pullOpts = {};
+        const pullOpts = {};
 
-            if (self.scaler.config.auth !== {}) {
-                pullOpts.authconfig = self.scaler.config.auth;
+        if (self.scaler.config.auth !== {}) {
+            pullOpts.authconfig = self.scaler.config.auth;
+        }
+        logger.info("%s: Pulling image: %s", self.pluginName, image);
+
+        docker.pull(image, pullOpts, function (err, stream) {
+            if (stream != null) {
+                docker.modem.followProgress(stream, onFinished, onProgress);
             }
-            logger.info("%s: Pulling image: %s", self.pluginName, image);
 
-            docker.pull(image, pullOpts, function (err, stream) {
-                if (stream != null) {
-                    docker.modem.followProgress(stream, onFinished, onProgress);
+            function onFinished(err, output) {
+                if (err) {
+                    throw err;
                 }
+                return image;
+            }
 
-                function onFinished(err, output) {
-                    if (err) {
-                        return reject(image, err);
-                    }
-                    resolve(image);
+            function onProgress(event) {
+                if (event.progressDetail !== undefined
+                    && event.progressDetail.current !== undefined
+                    && event.progressDetail.total !== undefined) {
+                    const percent = Math.round(100 / event.progressDetail.total * event.progressDetail.current);
+                    logger.debug('%s: %s: %s (%d%)', self.pluginName, event.id, event.status, percent);
+                } else if (event.id !== undefined) {
+                    logger.debug('%s: %s: %s', self.pluginName, event.id, event.status);
+                } else {
+                    logger.debug('%s: %s', self.pluginName, event.status);
                 }
-
-                function onProgress(event) {
-                    if (event.progressDetail !== undefined
-                        && event.progressDetail.current !== undefined
-                        && event.progressDetail.total !== undefined) {
-                        const percent = Math.round(100 / event.progressDetail.total * event.progressDetail.current);
-                        logger.debug('%s: %s: %s (%d%)', self.pluginName, event.id, event.status, percent);
-                    } else if (event.id !== undefined) {
-                        logger.debug('%s: %s: %s', self.pluginName, event.id, event.status);
-                    } else {
-                        logger.debug('%s: %s', self.pluginName, event.status);
-                    }
-                }
-            });
+            }
         });
     }
 }
