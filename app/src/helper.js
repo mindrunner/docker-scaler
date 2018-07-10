@@ -8,11 +8,21 @@ exports.Logger = (function () {
     let instance;
 
     function createLogger() {
-        return new (winston.Logger)({
-            transports: [
-                new (winston.transports.Console)()
-            ]
+        const { combine, timestamp, label, printf } = winston.format;
+        const myFormat = printf(info => {
+            return `${info.timestamp} ${info.level}: ${info.message}`;
         });
+
+        return winston.createLogger({
+            format: winston.format.combine(
+                timestamp(),
+                winston.format.colorize(),
+                winston.format.splat(),
+                myFormat
+            ),
+            transports: [new winston.transports.Console()]
+        });
+
     }
 
     return {

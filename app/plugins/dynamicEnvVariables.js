@@ -47,8 +47,6 @@ const dynamicEnvVariablesPlugin = function (scaler) {
     async function getDynamicVariables() {
         let dockerInfo = await scaler.getDockerInfo();
 
-        logger.info(util.inspect(dockerInfo, {showHidden: false, depth: null}));
-
         const dynamicVariables = {
             "{{SERVER_VERSION}}": dockerInfo.ServerVersion,
             "{{ARCHITECTURE}}": dockerInfo.Architecture,

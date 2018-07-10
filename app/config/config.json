@@ -25,6 +25,6 @@
     "password": "PiZcVNABL8w1vYkKVhXo",
     "email": "mwe@sbb.ch"
   },
-  "logLevel": "debug",
+  "logLevel": "info",
   "cleanup": true
 }
