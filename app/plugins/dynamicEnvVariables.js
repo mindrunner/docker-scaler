@@ -45,17 +45,18 @@ const dynamicEnvVariablesPlugin = function (scaler) {
     }
 
     function getDynamicVariables() {
-        const dockerInfo = async () => {
+        const getDockerInfo = async () => {
             return await scaler.getDockerInfo()
         };
+        let dockerInfo = getDockerInfo();
 
-        logger.info(util.inspect(myObject, {showHidden: false, depth: null}))
+        logger.info(util.inspect(dockerInfo, {showHidden: false, depth: null}));
 
         const dynamicVariables = {
-            "{{SERVER_VERSION}}": dockerInfo().ServerVersion,
-            "{{ARCHITECTURE}}": dockerInfo().Architecture,
-            "{{HTTP_PROXY}}": dockerInfo().HttpProxy,
-            "{{HTTPS_PROXY}}": dockerInfo().HttpsProxy,
+            "{{SERVER_VERSION}}": dockerInfo.ServerVersion,
+            "{{ARCHITECTURE}}": dockerInfo.Architecture,
+            "{{HTTP_PROXY}}": dockerInfo.HttpProxy,
+            "{{HTTPS_PROXY}}": dockerInfo.HttpsProxy,
         };
 
         const options = {
@@ -101,8 +102,8 @@ const dynamicEnvVariablesPlugin = function (scaler) {
         let hostname = "localhost";
 
         if (fs.existsSync('/.dockerenv')) {
-            logger.debug("Found docker environment, Hostname: %s", dockerInfo().Name);
-            hostname = dockerInfo().Name;
+            logger.debug("Found docker environment, Hostname: %s", dockerInfo.Name);
+            hostname = dockerInfo.Name;
         } else {
             logger.debug("Found non-docker environment, Hostname: %s", os.hostname());
             hostname = os.hostname();
