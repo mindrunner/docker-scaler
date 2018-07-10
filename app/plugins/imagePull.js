@@ -63,30 +63,9 @@ class imagePull {
         }
         logger.info("%s: Pulling image: %s", self.pluginName, image);
 
-
-        function onFinished(err, output) {
-            if (err) {
-                throw err;
-            }
-            return image;
-        }
-
-        function onProgress(event) {
-            if (event.progressDetail !== undefined
-                && event.progressDetail.current !== undefined
-                && event.progressDetail.total !== undefined) {
-                const percent = Math.round(100 / event.progressDetail.total * event.progressDetail.current);
-                logger.debug('%s: %s: %s (%d%)', self.pluginName, event.id, event.status, percent);
-            } else if (event.id !== undefined) {
-                logger.debug('%s: %s: %s', self.pluginName, event.id, event.status);
-            } else {
-                logger.debug('%s: %s', self.pluginName, event.status);
-            }
-        }
-
         const stream = await docker.pull(image, pullOpts);
-        stream.on('data', onProgress);
-        stream.on('end', onFinished);
+        stream.on('data', (data) => logger.debug(data));
+        stream.on('end', () => logger.info(`End pulling ${image}`));
     }
 }
 
