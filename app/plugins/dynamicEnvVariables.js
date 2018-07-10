@@ -12,10 +12,10 @@ const fs = require('fs'),
 
 const dynamicEnvVariablesPlugin = function (scaler) {
 
-    scaler.hooks.beforeCreateLate.push(function (config, args) {
+    scaler.hooks.beforeCreateLate.push(async function (config, args) {
         const
             containerConfig = args[2],
-            dynamicVariables = getDynamicVariables();
+            dynamicVariables = await getDynamicVariables();
 
         dynamicVariables['{{CONTAINER_NAME}}'] = containerConfig.name;
 
@@ -44,11 +44,8 @@ const dynamicEnvVariablesPlugin = function (scaler) {
         return string;
     }
 
-    function getDynamicVariables() {
-        const getDockerInfo = async () => {
-            return await scaler.getDockerInfo()
-        };
-        let dockerInfo = getDockerInfo();
+    async function getDynamicVariables() {
+        let dockerInfo = await scaler.getDockerInfo();
 
         logger.info(util.inspect(dockerInfo, {showHidden: false, depth: null}));
 
@@ -109,16 +106,14 @@ const dynamicEnvVariablesPlugin = function (scaler) {
             hostname = os.hostname();
         }
 
-        if(hostname.indexOf(".") > -1) {
+        if (hostname.indexOf(".") > -1) {
             dynamicVariables['{{HOST_NAME}}'] = hostname.split('.')[0];
         } else {
             dynamicVariables['{{HOST_NAME}}'] = hostname;
         }
 
         try {
-            dynamicVariables["{{IP}}"] = async () => {
-                await checkIp()
-            };
+            dynamicVariables["{{IP}}"] = await checkIp();
         } catch (e) {
             logger.error("Could not resolve hostname: %s", e);
         }
