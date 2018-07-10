@@ -103,7 +103,7 @@ class DockerScaler {
                         // to avoid starting to much containers
                         await self.runContainer(containerset);
                     } catch (err) {
-                        logger.warn("%s: %s", self.pluginName, err);
+                        logger.error("%s: %s", self.pluginName, err);
                     }
                 }
             }
@@ -156,12 +156,12 @@ class DockerScaler {
 
             if (!hasNewestImage) {
                 try {
-                    logger.debug("%s: There is no Data container with most recent image for %s, spaning new one!", self.pluginName, containerset.image);
+                    logger.info("%s: There is no Data container with most recent image for %s, spaning new one!", self.pluginName, containerset.image);
                     // we need to wait until the container is running,
                     // to avoid starting to much containers
                     await self.runContainer(containerset);
                 } catch (err) {
-                    logger.warn("%s: %s", self.pluginName, err);
+                    logger.error("%s: %s", self.pluginName, err);
                 }
             }
         }).catch(function (err) {
@@ -190,7 +190,7 @@ class DockerScaler {
                     reject(err);
                 });
             }).catch(function (err) {
-                logger.warn("%s: Couldn't create %s. Will try in next cycle. Error: %s", self.pluginName, containerset.image, err);
+                logger.error("%s: Couldn't create %s. Will try in next cycle. Error: %s", self.pluginName, containerset.image, err);
                 reject(err);
             });
         });
@@ -333,16 +333,9 @@ class DockerScaler {
                     logger.debug("%s: withId: %s", self.pluginName, image.Id);
                     logger.debug("%s: with RepoTags: %s", self.pluginName, image.RepoTags);
                     if (image.RepoTags != null) {
-                        // docker 1.12
                         if (image.RepoTags.indexOf(repoTag) !== -1) {
                             // we found the image, stop and resolve promise
                             logger.debug("%s: image %s match found on newer docker version (1.12)", self.pluginName, image.RepoTags);
-                            return resolve(image);
-                        }
-                        // docker 1.10 (need to prepend "docker.io")
-                        if (image.RepoTags.indexOf(repoTag.replace(/^/, 'docker.io\/')) !== -1) {
-                            // we found the image, stop and resolve promise
-                            logger.debug("%s: image %s match found on older docker version (1.10)", self.pluginName, image.RepoTags);
                             return resolve(image);
                         }
                     }

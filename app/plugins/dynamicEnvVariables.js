@@ -62,7 +62,13 @@ const dynamicEnvVariablesPlugin = function (scaler) {
             timeout: 1000
         };
 
-        const dnsLookup = async (name) => {
+        const dnsLookup = async () => {
+            let name = "";
+            if (fs.existsSync('/.dockerenv')) {
+                name = dockerInfo.Name;
+            } else {
+                name = os.hostname();
+            }
             return dnsPromises.lookup(name)
                 .then((result) => {
                     logger.info("Got IP: " + result.address);
@@ -72,27 +78,16 @@ const dynamicEnvVariablesPlugin = function (scaler) {
                 });
         };
 
+
         const checkIp = async () => {
             return request(options).then((response) => {
                 if (response.statusCode === 200) {
                     return response.body;
                 } else {
-                    if (fs.existsSync('/.dockerenv')) {
-                        logger.info("trying to resolve IP with hostname from dockerinfo");
-                        return dnsLookup(dockerInfo.Name);
-                    } else {
-                        logger.info("trying to resolve IP with hostname");
-                        return dnsLookup(os.hostname());
-                    }
+                    return dnsLookup();
                 }
             }).catch(() => {
-                if (fs.existsSync('/.dockerenv')) {
-                    logger.info("trying to resolve IP with hostname from dockerinfo");
-                    return dnsLookup(dockerInfo.Name);
-                } else {
-                    logger.info("trying to resolve IP with hostname");
-                    return dnsLookup(os.hostname());
-                }
+                return dnsLookup();
             });
         };
 

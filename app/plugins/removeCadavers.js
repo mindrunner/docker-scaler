@@ -52,7 +52,7 @@ const removeCadavers = function (scaler) {
                             }
                         }
                     } catch (err) {
-                        logger.warning("%s: Couldn't get dependent containers: %s", removeCadavers.pluginName, err);
+                        logger.error("%s: Couldn't get dependent containers: %s", removeCadavers.pluginName, err);
                     }
                 } else {
                     result.push(container);
@@ -146,7 +146,7 @@ const removeCadavers = function (scaler) {
                     try {
                         logger.debug("%s: Removing volume %s.", removeCadavers.pluginName, mount.Name);
                         await scaler.removeVolume(mount.Name);
-                        logger.info("%s: Removed volume %s.", removeCadavers.pluginName, mount.Name);
+                        logger.debug("%s: Removed volume %s.", removeCadavers.pluginName, mount.Name);
                     } catch (err) {
                         logger.error("%s: Couldn't remove volume %s. Error: %s", removeCadavers.pluginName, mount.Name, err);
                     }
@@ -161,9 +161,9 @@ const removeCadavers = function (scaler) {
                 try {
                     logger.debug("%s: Removing dangling image %s.", removeCadavers.pluginName, image.Id);
                     await scaler.removeImage(image.Id);
-                    logger.info("%s: Removed dangling image %s.", removeCadavers.pluginName, image.Id);
+                    logger.debug("%s: Removed dangling image %s.", removeCadavers.pluginName, image.Id);
                 } catch (err) {
-                    logger.warn("%s: Couldn't remove dangling image %s. Error: %s", removeCadavers.pluginName, image.Id, err);
+                    logger.error("%s: Couldn't remove dangling image %s. Error: %s", removeCadavers.pluginName, image.Id, err);
                 }
             }
         }
@@ -176,9 +176,9 @@ const removeCadavers = function (scaler) {
                 try {
                     logger.debug("%s: Removing dangling volume %s.", removeCadavers.pluginName, volume.Name);
                     await scaler.removeVolume(volume.Name);
-                    logger.info("%s: Removed dangling volume %s.", removeCadavers.pluginName, volume.Name);
+                    logger.debug("%s: Removed dangling volume %s.", removeCadavers.pluginName, volume.Name);
                 } catch (err) {
-                    logger.warn("%s: Couldn't remove dangling volume %s. Error: %s", removeCadavers.pluginName, volume.Name, err);
+                    logger.error("%s: Couldn't remove dangling volume %s. Error: %s", removeCadavers.pluginName, volume.Name, err);
                 }
             }
         }
