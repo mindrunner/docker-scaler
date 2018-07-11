@@ -1,14 +1,15 @@
 {
-  "scaleInterval": 30,
+  "scaleInterval": 1,
+  "pullInterval": 1,
   "containers": {
     "http1": {
-      "image": "httpd:latest",
+      "image": "docker.io/httpd:latest",
       "instances": 1,
       "pull": true
     }
   },
   "removeIdleJenkinsSlaves": {
-    "enabled": true,
+    "enabled": false,
     "jenkinsMaster": "https://ci-i.sbb.ch",
     "username": "fsvctip",
     "password": "sommer11",
@@ -16,13 +17,13 @@
     "maxAge": 1
   },
   "removeCadavers": {
-    "enabled": true,
-    "checkInterval": 60
+    "enabled": false,
+    "checkInterval": 1
   },
   "auth": {
-    "serveraddress": "https://index.docker.io/v1",
-    "username": "mwewzu",
-    "password": "PiZcVNABL8w1vYkKVhXo",
+    "serveraddress": "https://docker.bin.sbb.ch",
+    "username": "scaler",
+    "password": "APAWoMECbMfR7rbqAUztstKQqXu",
     "email": "mwe@sbb.ch"
   },
   "logLevel": "debug",

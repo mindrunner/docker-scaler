@@ -1,15 +1,10 @@
 'use strict';
 
-const fs = require('fs'),
+const
     crypto = require('crypto'),
-    async = require('asyncawait/async'),
-    await = require('asyncawait/await'),
-    network = require('network'),
-
     cleanup = require('./cleanup'),
     helper = require('./helper'),
     hookException = require('./exceptions/hookException'),
-
     logger = helper.Logger.getInstance(),
     docker = helper.Docker.getInstance();
 
@@ -58,7 +53,7 @@ class DockerScaler {
 
 
         logger.level = this.config.logLevel;
-        logger.debug("%s: %s", this.pluginName, this.config);
+        logger.debug("%s: %s", this.pluginName, JSON.stringify(this.config));
         cleanup.Cleanup(this.config);
     }
 
@@ -66,8 +61,9 @@ class DockerScaler {
      * Initializes the scaler and starts all services the first time
      */
     init() {
-        for (var i in this.config.containers) {
-            var defaultConfig = JSON.parse(JSON.stringify(this.defaultContainersetConfig)), // copy the variables, otherwise they are referenced
+        for (const i in this.config.containers) {
+            const
+                defaultConfig = JSON.parse(JSON.stringify(this.defaultContainersetConfig)), // copy the variables, otherwise they are referenced
                 containerset = this.config.containers[i] = Object.assign(defaultConfig, this.config.containers[i]); // merge default config with the containerset
 
             containerset.id = i; // object key of containerset is the same as the id.
@@ -96,31 +92,32 @@ class DockerScaler {
      *
      * @param containerset Object with containerset config
      */
-    spawnWorkerContainer(containerset) {
-        var self = this;
-
-        this.getContainerByGroupId(containerset.id).then(async(function (runningContainers) {
+    async spawnWorkerContainer(containerset) {
+        const self = this;
+        try {
+            let runningContainers = await this.getContainerByGroupId(containerset.id);
             if (runningContainers.length < containerset.instances) {
-                var neededContainers = containerset.instances - runningContainers.length;
+                const neededContainers = containerset.instances - runningContainers.length;
 
-                for (var i = 0; i < neededContainers; i++) {
+                for (let i = 0; i < neededContainers; i++) {
                     try {
                         // we need to wait until the container is running,
                         // to avoid starting to much containers
-                        await(self.runContainer(containerset));
+                        await self.runContainer(containerset);
                     } catch (err) {
-                        logger.warn("%s: %s", self.pluginName, err);
+                        logger.error("%s: %s", self.pluginName, err);
                     }
                 }
             }
-        })).catch(function (err) {
-            logger.error("%s: Couldn't count running containers: %s", this.pluginName, err);
-        }).then(function () {
-            // restart process when finished
-            helper.Timer.add(function () {
-                self.spawnWorkerContainer(containerset);
-            }, self.config.scaleInterval * 1000);
-        });
+        } catch (e) {
+            logger.error("%s: Couldn't count running containers: %s", this.pluginName, e);
+
+        }
+
+        // restart process when finished
+        helper.Timer.add(function () {
+            self.spawnWorkerContainer(containerset);
+        }, self.config.scaleInterval * 1000);
     }
 
     /**
@@ -128,28 +125,29 @@ class DockerScaler {
      *
      * @param containerset Object with containerset config
      */
-    spawnDataContainer(containerset) {
-        var self = this;
+    async spawnDataContainer(containerset) {
+        const self = this;
 
-        this.getContainerByGroupId(containerset.id, true).then(async(function (existingContainers) {
+        try {
+            let existingContainers = await this.getContainerByGroupId(containerset.id, true);
             logger.debug("%s: getContainerByGroupId", self.pluginName);
-            var hasNewestImage = false;
+            let hasNewestImage = false;
 
             try {
                 logger.debug("%s: looking for newest image:", self.pluginName, containerset.image);
-                var newestImage = await(self.getImageByRepoTag(containerset.image));
+                const newestImage = await self.getImageByRepoTag(containerset.image);
                 if (newestImage == null) {
                     logger.debug("%s: no image found for: %s", self.pluginName, containerset.image);
                 } else {
                     logger.debug("%s: found newest image: %s", self.pluginName, newestImage);
                     logger.debug("%s: enumerating existing containers", self.pluginName);
-                    for (var i in existingContainers) {
-                        var existingContainer = existingContainers[i];
+                    for (const i in existingContainers) {
+                        const existingContainer = existingContainers[i];
                         logger.debug("%s: existing container %d: %s", self.pluginName, i, existingContainers[i]);
                         logger.debug("%s: existingContainer.imageID: %s", self.pluginName, existingContainer.ImageID);
                         logger.debug("%s: newestImage.Id: %s", self.pluginName, newestImage.Id);
 
-                        if (newestImage != null && existingContainer.ImageID == newestImage.Id) {
+                        if (newestImage != null && existingContainer.ImageID === newestImage.Id) {
                             hasNewestImage = true;
                             logger.debug("%s: Found a match! Will not spawn new Container!", self.pluginName);
                         }
@@ -162,110 +160,105 @@ class DockerScaler {
 
             if (!hasNewestImage) {
                 try {
-                    logger.debug("%s: There is no Data container with most recent image for %s, spaning new one!", self.pluginName, containerset.image);
+                    logger.info("%s: There is no Data container with most recent image for %s, spaning new one!", self.pluginName, containerset.image);
                     // we need to wait until the container is running,
                     // to avoid starting to much containers
-                    await(self.runContainer(containerset));
+                    await self.runContainer(containerset);
                 } catch (err) {
-                    logger.warn("%s: %s", self.pluginName, err);
+                    logger.error("%s: %s", self.pluginName, err);
                 }
             }
-        })).catch(function (err) {
-            logger.error("%s: Couldn't count running containers: %s", self.pluginName, err);
-        }).then(function () {
-            // restart process when finished
-            helper.Timer.add(function () {
-                self.spawnDataContainer(containerset);
-            }, self.config.scaleInterval * 1000);
-        });
+
+        } catch (e) {
+            logger.error("%s: Couldn't count running containers: %s", self.pluginName, e);
+        }
+
+        // restart process when finished
+        helper.Timer.add(function () {
+            self.spawnDataContainer(containerset);
+        }, self.config.scaleInterval * 1000);
     }
 
 
-    runContainer(containerset) {
-        var self = this;
+    async runContainer(containerset) {
+        const self = this;
 
         containerset = JSON.parse(JSON.stringify(containerset)); // copy variable to stop referencing
         logger.info('%s: Starting instance of %s.', this.pluginName, containerset.image);
 
-        return new Promise(function (resolve, reject) {
-            self.createContainer(containerset).then(function (newContainer) {
-                self.startContainer(newContainer).then(function () {
-                    resolve(newContainer);
-                }).catch(function (err) {
-                    logger.error("%s: Couldn't start %s. Will try in next cycle. Error: %s", self.pluginName, containerset.image, err);
-                    reject(err);
-                });
-            }).catch(function (err) {
-                logger.warn("%s: Couldn't create %s. Will try in next cycle. Error: %s", self.pluginName, containerset.image, err);
-                reject(err);
-            });
-        });
+        let newContainer = null;
+        try {
+            newContainer = await self.createContainer(containerset);
+        } catch (err) {
+            logger.error("%s: Couldn't create %s. Will try in next cycle. Error: %s", self.pluginName, containerset.image, err);
+            throw err;
+        }
+        try {
+            await self.startContainer(newContainer);
+        } catch (err) {
+            logger.error("%s: Couldn't start %s. Will try in next cycle. Error: %s", self.pluginName, containerset.image, err);
+            throw err;
+        }
     }
 
-    createContainer(containerset) {
-        var self = this;
+    async createContainer(containerset) {
+        const self = this;
 
-        return new Promise(function (resolve, reject) {
-            var containersetConfig = {
-                Image: containerset.image,
-                name: containerset.name || containerset.id + "-" + self.generateId(8),
-                Labels: {
-                    'auto-deployed': 'true',
-                    'source-image': containerset.image,
-                    'group-id': containerset.id,
-                    'data-container': containerset.isDataContainer.toString()
-                },
-                Env: containerset.env,
-                PortBindings: {},
-                ExposedPorts: {},
-                Privileged: containerset.privileged || false,
-                Memory: containerset.Memory || 0,
-                MemorySwap: containerset.MemorySwap || 0,
-                CpuPercent: containerset.CpuPercent || 80,
-                NetworkMode: containerset.NetworkMode || "bridge",
-                Binds: [],
-                Volumes: {},
-                VolumesFrom: [],
-                ExtraHosts: containerset.ExtraHosts
-            };
+        const containersetConfig = {
+            Image: containerset.image,
+            name: containerset.name || containerset.id + "-" + DockerScaler.generateId(8),
+            Labels: {
+                'auto-deployed': 'true',
+                'source-image': containerset.image,
+                'group-id': containerset.id,
+                'data-container': containerset.isDataContainer.toString()
+            },
+            Env: containerset.env,
+            PortBindings: {},
+            ExposedPorts: {},
+            Privileged: containerset.privileged || false,
+            Memory: containerset.Memory || 0,
+            MemorySwap: containerset.MemorySwap || 0,
+            CpuPercent: containerset.CpuPercent || 80,
+            NetworkMode: containerset.NetworkMode || "bridge",
+            Binds: [],
+            Volumes: {},
+            VolumesFrom: [],
+            ExtraHosts: containerset.ExtraHosts
+        };
 
-            // Workaround for old versions of scaler @TODO remove when not needed anymore
-            if (containerset.isDataContainer) {
-                containersetConfig.Labels['norestart'] = 'true';
+        // Workaround for old versions of scaler @TODO remove when not needed anymore
+        if (containerset.isDataContainer) {
+            containersetConfig.Labels['norestart'] = 'true';
+        }
+
+        try {
+            await self.runHook('beforeCreate', containerset, containersetConfig);
+            await self.runHook('beforeCreateLate', containerset, containersetConfig);
+        } catch (err) {
+            if (err instanceof hookException) {
+                throw err.message;
             }
+            throw err;
+        }
 
-            try {
-                self.runHook('beforeCreate', containerset, containersetConfig);
-                self.runHook('beforeCreateLate', containerset, containersetConfig);
-            } catch (err) {
-                if (err instanceof hookException) {
-                    return reject(err.message);
-                }
+        try {
+            return await docker.createContainer(containersetConfig);
+        } catch (err) {
+            throw err;
+        }
 
-                return reject(err);
-            }
-
-            docker.createContainer(containersetConfig, function (err, newContainer) {
-                if (err) {
-                    return reject(err);
-                }
-
-                resolve(newContainer);
-            });
-        });
     }
 
-    startContainer(container) {
-        var self = this;
-        return new Promise(function (resolve, reject) {
-            container.start(null, function (err) {
-                if (err) {
-                    return reject(err);
-                }
-                logger.info("%s, Container %s was started.", self.pluginName, container.id);
-                resolve();
-            });
-        });
+    async startContainer(container) {
+        const self = this;
+        try {
+            await container.start();
+            logger.info("%s, Container %s was started.", self.pluginName, container.id);
+        } catch (e) {
+            logger.error("%s, Container %s could not be started.", self.pluginName, container.id);
+            throw e;
+        }
     }
 
     /**
@@ -275,47 +268,43 @@ class DockerScaler {
      * @param all boolean show non-running containers too.
      * @returns {Promise}
      */
-    getContainerByGroupId(id, all) {
-        var self = this;
+    async getContainerByGroupId(id, all) {
+        const self = this;
         all = all || false;
 
-        return new Promise(function (resolve, reject) {
-            if (id == undefined || id == null) {
-                return reject("You need an id.");
+        if (id === undefined || id == null) {
+            throw("You need an id.");
+        }
+
+        logger.debug('%s: Searching containers with id %s', self.pluginName, id);
+
+        // Only search for auto-deployed containers
+        const listOpts = {
+            all: all,
+            filters: {
+                label: ['auto-deployed']
             }
+        };
 
-            logger.debug('%s: Searching containers with id %s', self.pluginName, id);
+        if (!all) {
+            // we need to hide non-running containers
+            listOpts.filters.status = ['running'];
+        }
 
-            // Only search for auto-deployed containers
-            var listOpts = {
-                all: all,
-                filters: {
-                    label: ['auto-deployed']
+        try {
+            let containers = await docker.listContainers(listOpts)
+
+            const containerList = [];
+            for (const i in containers) {
+                const container = containers[i];
+                if (container.Labels['group-id'] !== undefined && container.Labels['group-id'] === id) {
+                    containerList.push(container);
                 }
-            };
-
-            if (!all) {
-                // we need to hide non-running containers
-                listOpts.filters.status = ['running'];
             }
-
-            docker.listContainers(listOpts, function (err, containers) {
-                if (err) {
-                    return reject(err);
-                }
-
-                var containerList = [];
-                for (var i in containers) {
-                    var container = containers[i];
-
-                    if (container.Labels['group-id'] != undefined && container.Labels['group-id'] == id) {
-                        containerList.push(container);
-                    }
-                }
-
-                resolve(containerList);
-            });
-        });
+            return containerList;
+        } catch (e) {
+            throw e;
+        }
     }
 
     /**
@@ -323,43 +312,29 @@ class DockerScaler {
      * @param repoTag Docker repo tag (e.g. rootlogin/shared:latest)
      * @returns {Promise}
      */
-    getImageByRepoTag(repoTag) {
-        var self = this;
-        return new Promise(function (resolve, reject) {
-            docker.listImages({}, function (err, images) {
-                if (err) {
-                    logger.debug("%s: error listing images:", self.pluginName, err);
-                    return reject(err);
-                }
-
-                // Workaround for docker. They don't support filter by repotag.
-                for (var i in images) {
-                    var image = images[i];
-                    logger.debug("%s: found image: %s", self.pluginName, image.Id);
-                    logger.debug("%s: with RepoTags: %s", self.pluginName, image.RepoTags);
-                    if (image.RepoTags != null) {
-                        // docker 1.12
-                        if (image.RepoTags.indexOf(repoTag) != -1) {
-                            // we found the image, stop and resolve promise
-                            logger.debug("%s: image %s match found on newer docker version (1.12)", self.pluginName, image.RepoTags);
-                            return resolve(image);
-                        }
-                        // docker 1.10 (need to prepend "docker.io")
-                        if (image.RepoTags.indexOf(repoTag.replace(/^/, 'docker.io\/')) != -1) {
-                            // we found the image, stop and resolve promise
-                            logger.debug("%s: image %s match found on older docker version (1.10)", self.pluginName, image.RepoTags);
-                            return resolve(image);
-                        }
+    async getImageByRepoTag(repoTag) {
+        const self = this;
+        try {
+            let images = await docker.listImages({});
+            // Workaround for docker. They don't support filter by repotag.
+            for (const i in images) {
+                const image = images[i];
+                logger.debug("%s: found image: %s", self.pluginName, JSON.stringify(image));
+                logger.debug("%s: withId: %s", self.pluginName, image.Id);
+                logger.debug("%s: with RepoTags: %s", self.pluginName, image.RepoTags);
+                if (image.RepoTags != null) {
+                    if (image.RepoTags.indexOf(repoTag) !== -1) {
+                        logger.debug("%s: image %s match found", self.pluginName, image.RepoTags);
+                        return image;
                     }
-
-                    logger.debug("%s: image %s does neither match %s nor %s", self.pluginName, image.RepoTags, repoTag, repoTag.replace(/^/, 'docker.io\/'));
                 }
 
-                // we didn't find anything, resolve with null
-                //TODO: reject?
-                resolve(null);
-            });
-        });
+                logger.debug("%s: image %s does neither match %s nor %s", self.pluginName, image.RepoTags, repoTag, repoTag.replace(/^/, 'docker.io\/'));
+            }
+        } catch (e) {
+            logger.debug("%s: error listing images:", self.pluginName, e);
+            throw e;
+        }
     }
 
     /**
@@ -367,182 +342,119 @@ class DockerScaler {
      * @param id
      * @returns {Promise}
      */
-    getNewestContainerByGroupId(id) {
-        return new Promise(function (resolve, reject) {
-            var listOpts = {
-                all: true,
-                filters: {
-                    label: ['auto-deployed']
-                }
-            };
+    async getNewestContainerByGroupId(id) {
+        const listOpts = {
+            all: true,
+            filters: {
+                label: ['auto-deployed']
+            }
+        };
 
-            docker.listContainers(listOpts, function (err, containers) {
-                if (err) {
-                    return reject(err);
-                }
+        try {
+            let containers = await docker.listContainers(listOpts);
 
-                // Workaround for docker. They don't support filter by name.
-                var result = null;
-                for (var i in containers) {
-                    var container = containers[i];
-
-                    if (container.Labels['group-id'] != undefined && container.Labels['group-id'] == id) {
-                        if (result === null) {
-                            result = container;
-                        } else if (result.Created < container.Created) {
-                            result = container;
-                        }
+            // Workaround for docker. They don't support filter by name.
+            let result = null;
+            for (const i in containers) {
+                const container = containers[i];
+                if (container.Labels['group-id'] !== undefined && container.Labels['group-id'] === id) {
+                    if (result === null) {
+                        result = container;
+                    } else if (result.Created < container.Created) {
+                        result = container;
                     }
                 }
-
-                resolve(result);
-            });
-        });
+            }
+            return result;
+        } catch (e) {
+            throw e;
+        }
     }
 
-    getDataContainers() {
-        return new Promise(function (resolve, reject) {
-            var listOpts = {
-                all: true,
-                filters: {
-                    label: [
-                        'auto-deployed',
-                        'data-container'
-                    ]
+    async getDataContainers() {
+        const listOpts = {
+            all: true,
+            filters: {
+                label: [
+                    'auto-deployed',
+                    'data-container'
+                ]
+            }
+        };
+
+        try {
+            let containers = await docker.listContainers(listOpts);
+            // Workaround for docker. They don't support filter by label value.
+            let result = [];
+            for (const i in containers) {
+                const container = containers[i];
+                if (container.Labels['data-container'] === 'true') {
+                    result.push(container);
                 }
-            };
-
-            docker.listContainers(listOpts, function (err, containers) {
-                if (err) {
-                    return reject(err);
-                }
-
-                // Workaround for docker. They don't support filter by label value.
-                var result = [];
-                for (var i in containers) {
-                    var container = containers[i];
-
-                    if (container.Labels['data-container'] == 'true') {
-                        result.push(container);
-                    }
-                }
-
-                resolve(result);
-            });
-        });
+            }
+            return result;
+        } catch (e) {
+            throw e;
+        }
     }
 
-    getAllRunningContainers() {
-        var listOpts = {
+    async getAllRunningContainers() {
+        const listOpts = {
             filters: {
                 status: ['running'],
                 label: ['auto-deployed']
             }
         };
-
-        return new Promise(function (resolve, reject) {
-            docker.listContainers(listOpts, function (err, containers) {
-                if (err) {
-                    return reject(err);
-                }
-
-                resolve(containers);
-            })
-        });
+        return await docker.listContainers(listOpts);
     }
 
-    getDockerInfo() {
-        return new Promise(function (resolve, reject) {
-            docker.info(function (err, data) {
-                if (err) {
-                    return reject(err);
-                }
-
-                resolve(data);
-            });
-        });
+    async getDockerInfo() {
+        return await docker.info();
     }
 
-    stopContainer(id) {
-        return new Promise(function (resolve, reject) {
-            var container = docker.getContainer(id);
-
-            container.stop(function (err) {
-                if (err && err.statusCode != 304) {
-                    return reject(err);
-                }
-
-                resolve();
-            })
-        });
+    async stopContainer(id) {
+        const container = docker.getContainer(id);
+        try {
+            container.stop({});
+        } catch (e) {
+            if (e.statusCode !== 304) {
+                throw e;
+            }
+        }
     }
 
-    killContainer(id) {
-        return new Promise(function (resolve, reject) {
-            var container = docker.getContainer(id);
-
-            container.kill(function (err) {
-                if (err && err.statusCode != 304) {
-                    return reject(err);
-                }
-
-                resolve();
-            })
-        });
+    async killContainer(id) {
+        const container = docker.getContainer(id);
+        try {
+            container.kill({});
+        } catch (e) {
+            if (e.statusCode !== 304) {
+                throw e;
+            }
+        }
     }
 
-    removeContainer(container) {
-        return new Promise(function (resolve, reject) {
-            container = docker.getContainer(container.Id); //@TODO Check null
-            container.remove(function (err) {
-                if (err) {
-                    return reject(err);
-                }
-                resolve(container);
-            })
-        });
+    async removeContainer(container) {
+        container = docker.getContainer(container.Id); //@TODO Check null
+        await container.remove({});
+        return container;
     }
 
-    removeVolume(name) {
-        return new Promise(function (resolve, reject) {
-            var volume = docker.getVolume(name);
-
-            volume.remove({}, function (err) {
-                if (err) {
-                    reject(err, name);
-                }
-
-                resolve(name);
-            });
-        });
+    async removeVolume(name) {
+        const volume = docker.getVolume(name);
+        await volume.remove({});
+        return name;
     }
 
-    removeImage(name) {
-        return new Promise(function (resolve, reject) {
-            var image = docker.getImage(name);
-
-            image.remove({}, function (err) {
-                if (err) {
-                    reject(err, name);
-                }
-
-                resolve(name);
-            });
-        });
+    async removeImage(name) {
+        const image = docker.getImage(name);
+        await image.remove({});
+        return name;
     }
 
-    inspectContainer(id) {
-        return new Promise(function (resolve, reject) {
-            var container = docker.getContainer(id);
-
-            container.inspect(function (err, data) {
-                if (err) {
-                    return reject(err);
-                }
-
-                resolve(data);
-            })
-        });
+    async inspectContainer(id) {
+        const container = docker.getContainer(id);
+        return await container.inspect({});
     }
 
     loadPlugin(plugin) {
@@ -550,11 +462,11 @@ class DockerScaler {
         this.plugins[plugin.pluginName] = new plugin(this);
     }
 
-    runHook(hook) {
-        var args = Array.prototype.slice.call(arguments);
+    async runHook(hook) {
+        const args = Array.prototype.slice.call(arguments);
 
-        for (var i in this.hooks[hook]) {
-            this.hooks[hook][i](this.config, args);
+        for (const i in this.hooks[hook]) {
+            await this.hooks[hook][i](this.config, args);
         }
     }
 
@@ -565,8 +477,8 @@ class DockerScaler {
      * @param str String to trim
      * @returns {*} Trimmed string
      */
-    trim(str) {
-        var regex = /[a-zA-Z0-9]/;
+    static trim(str) {
+        const regex = /[a-zA-Z0-9]/;
 
         while (!regex.test(str.charAt(0))) {
             str = str.slice(1);
@@ -585,7 +497,7 @@ class DockerScaler {
      * @param len
      * @returns {string}
      */
-    generateId(len) {
+    static generateId(len) {
         return crypto.randomBytes(len).toString('hex').substr(len);
     }
 }

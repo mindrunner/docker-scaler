@@ -1,9 +1,8 @@
 'use strict';
 
-const async = require('asyncawait/async'),
-    await = require('asyncawait/await'),
-
+const
     helper = require('../src/helper'),
+    util = require('util'),
     logger = helper.Logger.getInstance(),
     docker = helper.Docker.getInstance();
 
@@ -21,9 +20,8 @@ class imagePull {
         this.scaler = scaler;
         this.pluginName = "imagePull";
 
-        for (var i in this.scaler.config.containers) {
-            var containerset = this.scaler.config.containers[i];
-
+        for (const i in this.scaler.config.containers) {
+            const containerset = this.scaler.config.containers[i];
             this.pullContainerset(containerset);
         }
     }
@@ -33,20 +31,21 @@ class imagePull {
      *
      * @param containerset
      */
-    pullContainerset(containerset) {
-        var self = this;
+    async pullContainerset(containerset) {
+        const self = this;
 
         if (containerset.pull) {
-            this.pullImage(containerset.image).then(function (image) {
-                logger.info("%s: Successfully pulled %s.", self.pluginName, image);
+            try {
+                await this.pullImage(containerset.image);
+                logger.info("%s: Successfully pulled %s.", self.pluginName, containerset.image);
+
                 return image;
-            }).catch(function (image, err) {
-                logger.error("%s: Error pulling %s: %s", self.pluginName, image, err);
-            }).then(function () {
-                helper.Timer.add(function () {
-                    self.pullContainerset(containerset);
-                }, self.scaler.config.pullInterval * 1000);
-            });
+            } catch (e) {
+                logger.error("%s: Error pulling %s: %s", self.pluginName, containerset.image, e);
+            }
+            helper.Timer.add(function () {
+                self.pullContainerset(containerset);
+            }, self.scaler.config.pullInterval * 1000);
         }
     }
 
@@ -56,46 +55,44 @@ class imagePull {
      * @param image
      * @returns {Promise}
      */
-    pullImage(image) {
-        var self = this;
+    async pullImage(image) {
+        const self = this;
 
-        return new Promise(function (resolve, reject) {
-            var pullOpts = {};
+        const pullOpts = {};
 
-            if (self.scaler.config.auth != {}) {
+        // logger.debug(util.inspect(image, {showHidden: false, depth: null}))
+        // logger.debug(util.inspect(self.scaler.config.auth, {showHidden: false, depth: null}))
+
+        try {
+            if (self.scaler.config.auth !== {}) {
                 pullOpts.authconfig = self.scaler.config.auth;
+                logger.info("%s: Pulling image: %s as %s user", self.pluginName, image, pullOpts.authconfig.username);
+            } else {
+                logger.info("%s: Pulling image: %s as anonymous user", self.pluginName, image);
             }
-            logger.info("%s: Pulling image: %s", self.pluginName, image);
+        } catch (e) {
+            logger.warn("%s: Something went wrong with the authconfig: %s", self.pluginName, e);
+        }
 
-            docker.pull(image, pullOpts, function (err, stream) {
-                if (stream != null) {
-                    docker.modem.followProgress(stream, onFinished, onProgress);
-                }
+        const stream = await docker.pull(image, pullOpts);
 
-
-                function onFinished(err, output) {
-                    if (err) {
-                        return reject(image, err);
-                    }
-                    resolve(image);
-                }
-
-                function onProgress(event) {
-                    if (event.progressDetail != undefined
-                        && event.progressDetail.current != undefined
-                        && event.progressDetail.total != undefined) {
-                        var percent = Math.round(100 / event.progressDetail.total * event.progressDetail.current);
-                        logger.debug('%s: %s: %s (%d%)', self.pluginName, event.id, event.status, percent);
-                    } else if (event.id != undefined) {
-                        logger.debug('%s: %s: %s', self.pluginName, event.id, event.status);
-                    } else {
-                        logger.debug('%s: %s', self.pluginName, event.status);
-                    }
-                }
-
-            });
+        stream.on('data', (data) => {
+            let event = JSON.parse(data);
+            if (event.progressDetail !== undefined
+                && event.progressDetail.current !== undefined
+                && event.progressDetail.total !== undefined) {
+                const percent = Math.round(100 / event.progressDetail.total * event.progressDetail.current);
+                logger.debug('%s: %s: %s (%d%)', self.pluginName, event.id, event.status, percent);
+            } else if (event.id !== undefined) {
+                logger.debug('%s: %s: %s', self.pluginName, event.id, event.status);
+            } else {
+                logger.debug('%s: %s', self.pluginName, event.status);
+            }
         });
+        stream.on('end', () => logger.info(`End pulling ${image}`));
     }
 }
+
+imagePull.pluginName = "imagePull";
 
 module.exports = imagePull;

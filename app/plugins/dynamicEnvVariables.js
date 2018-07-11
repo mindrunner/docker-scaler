@@ -1,91 +1,117 @@
 'use strict';
 
 const fs = require('fs'),
-    async = require('asyncawait/async'),
-    await = require('asyncawait/await'),
-    network = require('network'),
+    helper = require('../src/helper'),
     os = require("os"),
-    request = require('request'),
-    dns = require('dns');
+    request = require('request-promise-native'),
+    dns = require('dns'),
+    dnsPromises = dns.promises,
+    logger = helper.Logger.getInstance();
 
 
+const dynamicEnvVariablesPlugin = function (scaler) {
 
-
-
-var dynamicEnvVariablesPlugin = async(function (scaler) {
-    scaler.hooks.beforeCreateLate.push(function (config, args) {
-        var container = args[1],
+    scaler.hooks.beforeCreateLate.push(async function (config, args) {
+        const
             containerConfig = args[2],
-            dynamicVariables = getDynamicVariables();
+            dynamicVariables = await getDynamicVariables();
 
         dynamicVariables['{{CONTAINER_NAME}}'] = containerConfig.name;
 
-        for (var i in containerConfig.Env) {
-            var env = containerConfig.Env[i];
-            var envKey = env.substr(0, env.indexOf('='));
-            var envValue = env.substr(env.indexOf('=') + 1);
+        for (const i in containerConfig.Env) {
+            const env = containerConfig.Env[i];
+            let envKey = env.substr(0, env.indexOf('='));
+            let envValue = env.substr(env.indexOf('=') + 1);
 
             containerConfig.Env[i] = envKey + "=" + replaceDynamicVariables(dynamicVariables, envValue);
 
             // allowing copy of env variables
-            for (var j in containerConfig.Env) {
-                var envs = containerConfig.Env[j];
-                var envKey = envs.substr(0, envs.indexOf('='));
-                var envValue = envs.substr(envs.indexOf('=') + 1);
+            for (const j in containerConfig.Env) {
+                const envs = containerConfig.Env[j];
+                envKey = envs.substr(0, envs.indexOf('='));
+                envValue = envs.substr(envs.indexOf('=') + 1);
                 containerConfig.Env[i] = containerConfig.Env[i].replace("{{" + envKey + "}}", envValue);
             }
         }
     });
 
     function replaceDynamicVariables(dynamicVariables, string) {
-        for (var i in dynamicVariables) {
+        for (const i in dynamicVariables) {
             string = string.replace(i, dynamicVariables[i]);
         }
 
         return string;
     }
 
-    function getDynamicVariables() {
-        var dockerInfo = await(scaler.getDockerInfo());
-        var dynamicVariables = {
+    async function getDynamicVariables() {
+        let dockerInfo = await scaler.getDockerInfo();
+
+        const dynamicVariables = {
             "{{SERVER_VERSION}}": dockerInfo.ServerVersion,
             "{{ARCHITECTURE}}": dockerInfo.Architecture,
             "{{HTTP_PROXY}}": dockerInfo.HttpProxy,
             "{{HTTPS_PROXY}}": dockerInfo.HttpsProxy,
         };
-        var checkIp = new Promise(function (resolve, reject) {
-            request('http://169.254.169.254/latest/meta-data/local-ipv4', function (error, response, body) {
-                console.log("------------------------------------------------------------FIRST");
-                if (!error && response.statusCode == 200) {
-                    resolve(body);
-                } else {
-                    if (fs.existsSync('/.dockerenv')) {
-                        console.log("trying to resolve IP with hostname from dockerinfo");
-                        dns.lookup(dockerInfo.Name, function (err, addresses, family) {
-                            console.log("Got IP: "+ addresses);
-                            resolve(addresses);
-                        });
-                    }else {
-                        console.log("trying to resolve IP with hostname");
-                        dns.lookup(os.hostname(), function (err, addresses, family) {
-                            console.log("Got IP: "+ addresses);
-                            resolve(addresses);
-                        });
-                    }
-                }
-            })
-        });
-        if (fs.existsSync('/.dockerenv')) {
-            dynamicVariables['{{HOST_NAME}}'] = dockerInfo.Name.split('.')[0];
-        } else {
-            dynamicVariables['{{HOST_NAME}}'] = os.hostname().split('.')[0];
-        }
-        dynamicVariables["{{IP}}"] = await(checkIp);
 
-        console.log("------------------------------------------------------------SECOND");
+        const options = {
+            uri: 'http://169.254.169.254/latest/meta-data/local-ipv4',
+            resolveWithFullResponse: true,
+            timeout: 1000
+        };
+
+        const dnsLookup = async () => {
+            let name = "";
+            if (fs.existsSync('/.dockerenv')) {
+                name = dockerInfo.Name;
+            } else {
+                name = os.hostname();
+            }
+            return dnsPromises.lookup(name)
+                .then((result) => {
+                    logger.info("Got IP: " + result.address);
+                    return result.address;
+                }).catch((err) => {
+                    throw err;
+                });
+        };
+
+
+        const checkIp = async () => {
+            return request(options).then((response) => {
+                if (response.statusCode === 200) {
+                    return response.body;
+                } else {
+                    return dnsLookup();
+                }
+            }).catch(() => {
+                return dnsLookup();
+            });
+        };
+
+        let hostname = "localhost";
+
+        if (fs.existsSync('/.dockerenv')) {
+            logger.debug("Found docker environment, Hostname: %s", dockerInfo.Name);
+            hostname = dockerInfo.Name;
+        } else {
+            logger.debug("Found non-docker environment, Hostname: %s", os.hostname());
+            hostname = os.hostname();
+        }
+
+        if (hostname.indexOf(".") > -1) {
+            dynamicVariables['{{HOST_NAME}}'] = hostname.split('.')[0];
+        } else {
+            dynamicVariables['{{HOST_NAME}}'] = hostname;
+        }
+
+        try {
+            dynamicVariables["{{IP}}"] = await checkIp();
+        } catch (e) {
+            logger.error("Could not resolve hostname: %s", e);
+        }
         return dynamicVariables;
     }
-});
+};
 
 dynamicEnvVariablesPlugin.pluginName = "dynamicEnvVariables";
 
