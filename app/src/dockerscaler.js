@@ -319,7 +319,7 @@ class DockerScaler {
             // Workaround for docker. They don't support filter by repotag.
             for (const i in images) {
                 const image = images[i];
-                logger.debug("%s: found image: %s", self.pluginName, image);
+                logger.debug("%s: found image: %s", self.pluginName, JSON.stringify(image));
                 logger.debug("%s: withId: %s", self.pluginName, image.Id);
                 logger.debug("%s: with RepoTags: %s", self.pluginName, image.RepoTags);
                 if (image.RepoTags != null) {

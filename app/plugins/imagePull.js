@@ -36,15 +36,16 @@ class imagePull {
 
         if (containerset.pull) {
             try {
-                let image = await this.pullImage(containerset.image);
-                logger.info("%s: Successfully pulled %s.", self.pluginName, image);
-                helper.Timer.add(function () {
-                    self.pullContainerset(containerset);
-                }, self.scaler.config.pullInterval * 1000);
+                await this.pullImage(containerset.image);
+                logger.info("%s: Successfully pulled %s.", self.pluginName, containerset.image);
+
                 return image;
             } catch (e) {
                 logger.error("%s: Error pulling %s: %s", self.pluginName, containerset.image, e);
             }
+            helper.Timer.add(function () {
+                self.pullContainerset(containerset);
+            }, self.scaler.config.pullInterval * 1000);
         }
     }
 
