@@ -77,15 +77,17 @@ const dynamicEnvVariablesPlugin = function (scaler) {
 
 
         const checkIp = async () => {
-            return request(options).then((response) => {
+
+            try {
+                let response = request(options);
                 if (response.statusCode === 200) {
                     return response.body;
                 } else {
-                    return dnsLookup();
+                    return await dnsLookup();
                 }
-            }).catch(() => {
-                return dnsLookup();
-            });
+            } catch (e) {
+                return await dnsLookup();
+            }
         };
 
         let hostname = "localhost";
