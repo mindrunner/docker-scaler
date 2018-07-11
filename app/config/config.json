@@ -2,7 +2,7 @@
   "scaleInterval": 30,
   "containers": {
     "http1": {
-      "image": "httpd:latest",
+      "image": "docker.io/httpd:latest",
       "instances": 1,
       "pull": true
     }

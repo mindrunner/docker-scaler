@@ -320,8 +320,7 @@ class DockerScaler {
                 logger.debug("%s: with RepoTags: %s", self.pluginName, image.RepoTags);
                 if (image.RepoTags != null) {
                     if (image.RepoTags.indexOf(repoTag) !== -1) {
-                        // we found the image, stop and resolve promise
-                        logger.debug("%s: image %s match found on newer docker version (1.12)", self.pluginName, image.RepoTags);
+                        logger.debug("%s: image %s match found", self.pluginName, image.RepoTags);
                         return image;
                     }
                 }

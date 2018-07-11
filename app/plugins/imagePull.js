@@ -59,18 +59,20 @@ class imagePull {
 
         const pullOpts = {};
 
+        logger.debug(util.inspect(image, {showHidden: false, depth: null}))
+        logger.debug(util.inspect(self.scaler.config.auth, {showHidden: false, depth: null}))
 
         try {
-            if (self.scaler.config.auth.serveraddress.indexOf(image) > -1) {
+            // if (self.scaler.config.auth.serveraddress.indexOf(image) > -1) {
                 if (self.scaler.config.auth !== {}) {
                     pullOpts.authconfig = self.scaler.config.auth;
                     logger.info("%s: Pulling image: %s as %s user", self.pluginName, image, pullOpts.authconfig.username);
                 }
-            } else {
-                logger.info("%s: Pulling image: %s as anonymous user", self.pluginName, image, pullOpts.authconfig.username);
-            }
+            // } else {
+            //     logger.info("%s: Pulling image: %s as anonymous user", self.pluginName, image);
+            // }
         } catch (e) {
-            logger.warn("Something went wrong with the authconfig: %s", e);
+            logger.warn("%s: Something went wrong with the authconfig: %s", self.pluginName, e);
         }
 
 
