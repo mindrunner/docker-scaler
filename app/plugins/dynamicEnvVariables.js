@@ -77,9 +77,8 @@ const dynamicEnvVariablesPlugin = function (scaler) {
 
 
         const checkIp = async () => {
-
             try {
-                let response = request(options);
+                let response = await request(options);
                 if (response.statusCode === 200) {
                     return response.body;
                 } else {
