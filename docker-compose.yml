@@ -5,7 +5,7 @@ services:
   scaler:
     # Avoid creating special network interface
     network_mode: bridge
-    image: schweizerischebundesbahnen/scaler:latest
+    image: scaler
     volumes:
       # Docker socket for controlling other containers
       - "/var/run/docker.sock:/var/run/docker.sock"
