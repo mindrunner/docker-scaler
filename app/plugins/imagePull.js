@@ -59,8 +59,8 @@ class imagePull {
 
         const pullOpts = {};
 
-        logger.debug(util.inspect(image, {showHidden: false, depth: null}))
-        logger.debug(util.inspect(self.scaler.config.auth, {showHidden: false, depth: null}))
+        // logger.debug(util.inspect(image, {showHidden: false, depth: null}))
+        // logger.debug(util.inspect(self.scaler.config.auth, {showHidden: false, depth: null}))
 
         try {
             if (self.scaler.config.auth !== {}) {
