@@ -8,7 +8,7 @@
     }
   },
   "removeIdleJenkinsSlaves": {
-    "enabled": true,
+    "enabled": false,
     "jenkinsMaster": "https://ci-i.sbb.ch",
     "username": "fsvctip",
     "password": "sommer11",
@@ -16,7 +16,7 @@
     "maxAge": 1
   },
   "removeCadavers": {
-    "enabled": true,
+    "enabled": false,
     "checkInterval": 60
   },
   "auth": {

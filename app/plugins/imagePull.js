@@ -59,18 +59,25 @@ class imagePull {
 
         const pullOpts = {};
 
-        // if (self.scaler.config.auth !== {}) {
-        //     pullOpts.authconfig = self.scaler.config.auth;
-        // }
-        logger.info("%s: Pulling image: %s", self.pluginName, image);
+
+        try {
+            if (self.scaler.config.auth.serveraddress.indexOf(image) > -1) {
+                if (self.scaler.config.auth !== {}) {
+                    pullOpts.authconfig = self.scaler.config.auth;
+                    logger.info("%s: Pulling image: %s as %s user", self.pluginName, image, pullOpts.authconfig.username);
+                }
+            } else {
+                logger.info("%s: Pulling image: %s as anonymous user", self.pluginName, image, pullOpts.authconfig.username);
+            }
+        } catch (e) {
+            logger.warn("Something went wrong with the authconfig: %s", e);
+        }
+
 
         const stream = await docker.pull(image, pullOpts);
 
         stream.on('data', (data) => {
             let event = JSON.parse(data);
-            // logger.debug(event);
-            // logger.info(util.inspect(event, {showHidden: false, depth: null}));
-
             if (event.progressDetail !== undefined
                 && event.progressDetail.current !== undefined
                 && event.progressDetail.total !== undefined) {
