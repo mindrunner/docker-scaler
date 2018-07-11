@@ -53,7 +53,7 @@ class DockerScaler {
 
 
         logger.level = this.config.logLevel;
-        logger.debug("%s: %s", this.pluginName, this.config);
+        logger.debug("%s: %s", this.pluginName, JSON.stringify(this.config));
         cleanup.Cleanup(this.config);
     }
 
@@ -92,9 +92,10 @@ class DockerScaler {
      *
      * @param containerset Object with containerset config
      */
-    spawnWorkerContainer(containerset) {
+    async spawnWorkerContainer(containerset) {
         const self = this;
-        this.getContainerByGroupId(containerset.id).then(async function (runningContainers) {
+        try {
+            let runningContainers = await this.getContainerByGroupId(containerset.id);
             if (runningContainers.length < containerset.instances) {
                 const neededContainers = containerset.instances - runningContainers.length;
 
@@ -108,14 +109,15 @@ class DockerScaler {
                     }
                 }
             }
-        }).catch(function (err) {
-            logger.error("%s: Couldn't count running containers: %s", this.pluginName, err);
-        }).then(function () {
-            // restart process when finished
-            helper.Timer.add(function () {
-                self.spawnWorkerContainer(containerset);
-            }, self.config.scaleInterval * 1000);
-        });
+        } catch (e) {
+            logger.error("%s: Couldn't count running containers: %s", this.pluginName, e);
+
+        }
+
+        // restart process when finished
+        helper.Timer.add(function () {
+            self.spawnWorkerContainer(containerset);
+        }, self.config.scaleInterval * 1000);
     }
 
     /**
@@ -123,10 +125,11 @@ class DockerScaler {
      *
      * @param containerset Object with containerset config
      */
-    spawnDataContainer(containerset) {
+    async spawnDataContainer(containerset) {
         const self = this;
 
-        this.getContainerByGroupId(containerset.id, true).then(async function (existingContainers) {
+        try {
+            let existingContainers = await this.getContainerByGroupId(containerset.id, true);
             logger.debug("%s: getContainerByGroupId", self.pluginName);
             let hasNewestImage = false;
 
@@ -165,14 +168,15 @@ class DockerScaler {
                     logger.error("%s: %s", self.pluginName, err);
                 }
             }
-        }).catch(function (err) {
-            logger.error("%s: Couldn't count running containers: %s", self.pluginName, err);
-        }).then(function () {
-            // restart process when finished
-            helper.Timer.add(function () {
-                self.spawnDataContainer(containerset);
-            }, self.config.scaleInterval * 1000);
-        });
+
+        } catch (e) {
+            logger.error("%s: Couldn't count running containers: %s", self.pluginName, e);
+        }
+
+        // restart process when finished
+        helper.Timer.add(function () {
+            self.spawnDataContainer(containerset);
+        }, self.config.scaleInterval * 1000);
     }
 
 
@@ -449,8 +453,8 @@ class DockerScaler {
     }
 
     async inspectContainer(id) {
-            const container = docker.getContainer(id);
-            return await container.inspect({});
+        const container = docker.getContainer(id);
+        return await container.inspect({});
     }
 
     loadPlugin(plugin) {

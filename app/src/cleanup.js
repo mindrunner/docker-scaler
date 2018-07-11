@@ -5,6 +5,7 @@ const helper = require('./helper'),
     logger = helper.Logger.getInstance();
 
 exports.Cleanup = function Cleanup(config) {
+    logger.debug("Inititalizing Cleanup hooks");
     process.on('cleanup', function () {
         logger.info('%s: Cleaning up...', "cleanup");
         helper.Timer.clearAll();
@@ -28,15 +29,18 @@ exports.Cleanup = function Cleanup(config) {
 
     // do app specific cleaning before exiting
     process.on('exit', function () {
+        logger.debug("Received EXIT Signal");
         process.emit('cleanup');
     });
 
     // catch ctrl+c event and exit normally
     process.on('SIGINT', function () {
+        logger.debug("Received SIGINT Signal");
         process.emit('cleanup');
     });
 
     process.on('SIGTERM', function () {
+        logger.debug("Received SIGTERM Signal");
         process.emit('cleanup');
     });
 
