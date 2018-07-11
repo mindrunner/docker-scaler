@@ -73,7 +73,6 @@ class imagePull {
             logger.warn("%s: Something went wrong with the authconfig: %s", self.pluginName, e);
         }
 
-
         const stream = await docker.pull(image, pullOpts);
 
         stream.on('data', (data) => {
