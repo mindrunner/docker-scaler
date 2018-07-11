@@ -9,7 +9,7 @@ const
 // Use this to debug HTTP Requests
 // require('request-debug')(request);
 
-let removeIdleJenkinsSlaves = function (scaler) {
+const removeIdleJenkinsSlaves = function (scaler) {
     const getIdleSlavesJenkinsScript = function () {
         return `import hudson.FilePath
 import hudson.model.Node
@@ -238,7 +238,7 @@ for (Node node in jenkinsNodes)
         logger.debug("%s: Checking idle slaves...", removeIdleJenkinsSlaves.pluginName);
         try {
             const idleNodes = await getIdles();
-            logger.info("%s: Found %d idle containers.", removeIdleJenkinsSlaves.pluginName, idleNodes.length);
+            logger.debug("%s: Found %d idle containers.", removeIdleJenkinsSlaves.pluginName, idleNodes.length);
 
             for (const i in idleNodes) {
                 try {
@@ -256,13 +256,13 @@ for (Node node in jenkinsNodes)
                     try {
                         removeIdleHostFromJenkins(idleNodeId);
                     } catch (err) {
-                        logger.warn("%s: Container %s not registered in Jenkins", removeIdleJenkinsSlaves.pluginName, container.Id)
+                        logger.error("%s: Container %s not registered in Jenkins", removeIdleJenkinsSlaves.pluginName, container.Id)
                     }
                     if (containerInfo.State.Running) {
                         await scaler.killContainer(container.Id);
                     }
                     await scaler.removeContainer(container.Id);
-                    logger.info("%s: Removed idle container %s.", removeIdleJenkinsSlaves.pluginName, container.Id)
+                    logger.debug("%s: Removed idle container %s.", removeIdleJenkinsSlaves.pluginName, container.Id)
                 } catch (err) {
                     logger.error("%s: %s", removeIdleJenkinsSlaves.pluginName, err);
                 }
@@ -276,7 +276,7 @@ for (Node node in jenkinsNodes)
         logger.debug("%s: Checking slaves states...", removeIdleJenkinsSlaves.pluginName);
         try {
             const nodes = await getNodes();
-            logger.info("%s: Found %d containers.", removeIdleJenkinsSlaves.pluginName, nodes.length);
+            logger.debug("%s: Found %d containers.", removeIdleJenkinsSlaves.pluginName, nodes.length);
 
             for (const i in nodes) {
                 try {
@@ -339,7 +339,7 @@ for (Node node in jenkinsNodes)
             headers[crumbField] = crumb;
             postRequest = postRequest.defaults({headers});
         } catch (ex) {
-            logger.info("Jenkins does not support CRSF Header.");
+            logger.warn("Jenkins does not support CSRF Header, consider activating the CSRF protection");
         }
 
         await checkAge();

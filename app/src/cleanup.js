@@ -5,23 +5,22 @@ const helper = require('./helper'),
     logger = helper.Logger.getInstance();
 
 exports.Cleanup = function Cleanup(config) {
+    logger.debug("Inititalizing Cleanup hooks");
     process.on('cleanup', function () {
         logger.info('%s: Cleaning up...', "cleanup");
         helper.Timer.clearAll();
         logger.info('%s: Waiting all processes to finish...', "cleanup");
 
-        // remove all containers on cleanup
-        if ((process.env.CLEANUP && process.env.CLEANUP == "true") || config.cleanup == true) {
-            var listOpts = {
+        if ((process.env.CLEANUP && process.env.CLEANUP === "true") || config.cleanup === true) {
+            const listOpts = {
                 all: true,
                 filters: {
                     label: ['auto-deployed']
                 }
             };
             docker.listContainers(listOpts, function (err, containers) {
-                for (var i in containers) {
-                    var container = containers[i];
-
+                for (const i in containers) {
+                    const container = containers[i];
                     helper.removeContainer(container.Id);
                 }
             });
@@ -30,15 +29,18 @@ exports.Cleanup = function Cleanup(config) {
 
     // do app specific cleaning before exiting
     process.on('exit', function () {
+        logger.debug("Received EXIT Signal");
         process.emit('cleanup');
     });
 
     // catch ctrl+c event and exit normally
     process.on('SIGINT', function () {
+        logger.debug("Received SIGINT Signal");
         process.emit('cleanup');
     });
 
     process.on('SIGTERM', function () {
+        logger.debug("Received SIGTERM Signal");
         process.emit('cleanup');
     });
 

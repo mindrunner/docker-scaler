@@ -4,17 +4,25 @@ const fs = require('fs'),
     Docker = require('dockerode'),
     winston = require('winston');
 
-// Logger Singleton
 exports.Logger = (function () {
-    var instance;
+    let instance;
 
     function createLogger() {
-        var logger = new (winston.Logger)({
-            transports: [
-                new (winston.transports.Console)()
-            ]
+        const { combine, timestamp, label, printf } = winston.format;
+        const myFormat = printf(info => {
+            return `${info.timestamp} ${info.level}: ${info.message}`;
         });
-        return logger;
+
+        return winston.createLogger({
+            format: winston.format.combine(
+                timestamp(),
+                winston.format.colorize(),
+                winston.format.splat(),
+                myFormat
+            ),
+            transports: [new winston.transports.Console()]
+        });
+
     }
 
     return {
@@ -27,22 +35,18 @@ exports.Logger = (function () {
     };
 })();
 
-// docker singleton
 exports.Docker = (function () {
-    var instance;
+    let instance;
 
     function createDocker() {
-        var socket = process.env.DOCKER_SOCKET || '/var/run/docker.sock';
+        const socket = process.env.DOCKER_SOCKET || '/var/run/docker.sock';
         if (!fs.existsSync(socket)) {
             throw new Error("You have to connect the docker socket (e.g. -v /var/run/docker.sock:/var/run/docker.sock).");
         }
-
-        var stats = fs.statSync(socket);
-
+        const stats = fs.statSync(socket);
         if (!stats.isSocket()) {
             throw new Error('Are you sure docker is running?');
         }
-
         return new Docker({socketPath: socket});
     }
 
@@ -56,9 +60,8 @@ exports.Docker = (function () {
     };
 })();
 
-// timer singleton (let us stop all timers via cleanup job)
 exports.Timer = (function () {
-    var timers = [],
+    let timers = [],
         run = true;
 
     return {
@@ -71,7 +74,7 @@ exports.Timer = (function () {
         },
         clearAll: function () {
             run = false;
-            for (var i in timers) {
+            for (const i in timers) {
                 clearTimeout(timers[i]);
             }
         }
@@ -79,13 +82,13 @@ exports.Timer = (function () {
 })();
 
 exports.removeContainer = function (containerId) {
-    var docker = exports.Docker.getInstance(),
+    const docker = exports.Docker.getInstance(),
         logger = exports.Logger.getInstance(),
         container = docker.getContainer(containerId);
 
     container.stop(function (err, data) {
         if (err) {
-            logger.warn("%s: Error stopping %s. May it's not running.", "helper", containerId);
+            logger.error("%s: Error stopping %s. Maybe it's not running.", "helper", containerId);
         } else {
             logger.info("%s: Stopped container %s.", "helper", containerId);
         }
