@@ -7,18 +7,19 @@ const
 
 const removeCadavers = function (scaler) {
 
-    const getDanglingImages = function () {
+    const getDanglingImages = async function () {
         const listOpts = {
             all: true,
             filters: {
                 dangling: ['true']
             }
         };
-        docker.listImages(listOpts).then((containers) => {
-            return containers;
-        }).catch((err) => {
-            throw err;
-        });
+
+        try {
+            return await docker.listImages(listOpts);
+        } catch (e) {
+            throw e;
+        }
     };
 
     const getNonRunningByState = async function (state) {
@@ -32,21 +33,20 @@ const removeCadavers = function (scaler) {
                 ]
             }
         };
-        docker.listContainers(listOpts).then((containers) => {
+
+
+        try {
+            let containers = await docker.listContainers(listOpts);
             const result = [];
             for (const i in containers) {
                 const container = containers[i];
                 // Don't remove data-containers
                 if (container.Labels['data-container'] === 'true') {
                     try {
-                        const newestContainer = async () => {
-                            return await scaler.getNewestContainerByGroupId(container.Labels['group-id']);
-                        };
+                        const newestContainer = await scaler.getNewestContainerByGroupId(container.Labels['group-id']);
 
                         if (newestContainer.Id !== container.Id) {
-                            const dependentContainers = async () => {
-                                return await getDependentContainers(container.Mounts);
-                            };
+                            const dependentContainers = await getDependentContainers(container.Mounts);
                             if (dependentContainers.length === 0) {
                                 result.push(container); // Not the newest and no dependent containers. Remove.
                             }
@@ -59,27 +59,29 @@ const removeCadavers = function (scaler) {
                 }
             }
             return result;
-        }).catch((err) => {
-            throw err;
-        });
+        } catch (e) {
+            throw e;
+        }
     };
 
-    const getDanglingVolumes = function () {
+    const getDanglingVolumes = async function () {
         const listOpts = {
             all: true,
             filters: {
                 dangling: ['true']
             }
         };
-        docker.listVolumes(listOpts).then((volumes) => {
+
+        try {
+            let volumes = docker.listVolumes(listOpts);
             // strange behavior in docker api. volumes list is a list in a list.
             return volumes.Volumes;
-        }).catch((err) => {
-            throw err;
-        });
+        } catch (e) {
+            throw e;
+        }
     };
 
-    const getDependentContainers = function (mounts) {
+    const getDependentContainers = async function (mounts) {
         let mount;
         // only saving mount ids for easier comparing.
         const mountIds = [];
@@ -87,7 +89,9 @@ const removeCadavers = function (scaler) {
             mount = mounts[i];
             mountIds.push(mount.Name);
         }
-        scaler.getAllRunningContainers().then((containers) => {
+
+        try {
+            let containers = await scaler.getAllRunningContainers();
             const result = [];
             for (let i in containers) {
                 const container = containers[i];
@@ -101,9 +105,9 @@ const removeCadavers = function (scaler) {
                 }
             }
             return result;
-        }).catch((err) => {
-            throw err;
-        });
+        } catch (e) {
+            throw e;
+        }
     };
 
     const uniqueArray = (xs) => {

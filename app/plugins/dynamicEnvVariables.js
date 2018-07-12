@@ -66,13 +66,15 @@ const dynamicEnvVariablesPlugin = function (scaler) {
             } else {
                 name = os.hostname();
             }
-            return dnsPromises.lookup(name)
-                .then((result) => {
-                    logger.info("Got IP: " + result.address);
-                    return result.address;
-                }).catch((err) => {
-                    throw err;
-                });
+
+            try {
+
+                let result = await dnsPromises.lookup(name);
+                logger.info("Got IP: " + result.address);
+                return result.address;
+            }catch (e) {
+                throw e;
+            }
         };
 
 
