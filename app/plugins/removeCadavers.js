@@ -30,8 +30,8 @@ const removeCadavers = function (scaler) {
             filters: {
                 status: [state],
                 label: [
-                    'auto-deployed'
-                    // 'data-container'
+                    'auto-deployed',
+                    'data-container'
                 ]
             }
         };
@@ -132,9 +132,9 @@ const removeCadavers = function (scaler) {
         logger.debug("%s: Searching cadavers...", removeCadavers.pluginName);
 
         let cadavers = [];
-        cadavers.concat(await getNonRunningByState('created'));
-        cadavers.concat(await getNonRunningByState('exited'));
-        cadavers.concat(await getNonRunningByState('dead'));
+        cadavers = cadavers.concat(await getNonRunningByState('created'));
+        cadavers = cadavers.concat(await getNonRunningByState('exited'));
+        cadavers = cadavers.concat(await getNonRunningByState('dead'));
 
         cadavers = uniqueArray(cadavers);
 
