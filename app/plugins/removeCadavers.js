@@ -30,8 +30,8 @@ const removeCadavers = function (scaler) {
             filters: {
                 status: [state],
                 label: [
-                    'auto-deployed',
-                    'data-container'
+                    'auto-deployed'
+                    // 'data-container'
                 ]
             }
         };
