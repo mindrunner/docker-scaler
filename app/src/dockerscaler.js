@@ -292,7 +292,7 @@ class DockerScaler {
         }
 
         try {
-            let containers = await docker.listContainers(listOpts)
+            let containers = await docker.listContainers(listOpts);
 
             const containerList = [];
             for (const i in containers) {

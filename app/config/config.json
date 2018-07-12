@@ -1,6 +1,6 @@
 {
-  "scaleInterval": 1,
-  "pullInterval": 1,
+  "scaleInterval": 10,
+  "pullInterval": 60,
   "containers": {
     "http1": {
       "image": "docker.io/httpd:latest",
@@ -17,8 +17,8 @@
     "maxAge": 1
   },
   "removeCadavers": {
-    "enabled": false,
-    "checkInterval": 1
+    "enabled": true,
+    "checkInterval": 10
   },
   "auth": {
     "serveraddress": "https://docker.bin.sbb.ch",

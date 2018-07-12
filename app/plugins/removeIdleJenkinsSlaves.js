@@ -110,7 +110,7 @@ for (Node node in jenkinsNodes)
 }`;
     };
 
-    const getCrumb = () => {
+    const getCrumb = async () => {
         const crumbUrl = scaler.config.removeIdleJenkinsSlaves.jenkinsMaster + `/crumbIssuer/api/xml?xpath=concat(//crumbRequestField,":",//crumb)`;
         const getCrumbRequest = request.defaults({
             method: 'GET',
@@ -119,119 +119,128 @@ for (Node node in jenkinsNodes)
                 pass: scaler.config.removeIdleJenkinsSlaves.password
             }
         });
-        return getCrumbRequest(crumbUrl)
-            .then(function (htmlString) {
-                return htmlString;
-            }).catch(function (err) {
-                throw err;
-            });
+        try {
+            return await getCrumbRequest(crumbUrl);
+        } catch (e) {
+            throw e
+        }
     };
 
-    const setOldNodeOffline = (nodeId) => {
+    const setOldNodeOffline = async (nodeId) => {
         const req = postRequest.defaults({
             form: {
                 script: setOldNodeOfflineJenkinsScript(nodeId)
             }
         });
-        return req(scriptUrl)
-            .then(function (htmlString) {
-                return htmlString;
-            }).catch(function (err) {
-                throw err;
-            });
+
+        try {
+            return await req(scriptUrl);
+        } catch (e) {
+            throw e;
+        }
     };
 
-    const removeIdleHostFromJenkins = (nodeId) => {
+    const removeIdleHostFromJenkins = async (nodeId) => {
         const req = postRequest.defaults({
             form: {
                 script: removeIdleHostFromJenkinsScript(nodeId)
             }
         });
-        return req(scriptUrl)
-            .then(function (htmlString) {
-                return htmlString;
-            }).catch(function (err) {
-                throw err;
-            });
+        try {
+            return await req(scriptUrl);
+        } catch (e) {
+            throw e;
+        }
     };
 
-    const getNodes = () => {
+    const getNodes = async () => {
         const req = postRequest.defaults({
             form: {
                 script: getAllNodesJenkinsScript()
             }
         });
-        return req(scriptUrl)
-            .then(function (body) {
-                const serverList = body.trim().split("\n");
-                if (serverList.length === 0) {
-                    throw "Didn't get any server from API";
-                }
 
-                for (const i in serverList) {
-                    const server = serverList[i].trim();
-                    if (server.length === 0) {
-                        continue;
-                    }
-                    if (server.length !== 8) {
-                        throw "Got error from server:\n" + body;
-                    }
+        try {
+            let body = await req(scriptUrl);
+            const serverList = body.trim().split("\n");
+            if (serverList.length === 0) {
+                throw "Didn't get any server from API";
+            }
+
+            for (const i in serverList) {
+                const server = serverList[i].trim();
+                if (server.length === 0) {
+                    continue;
                 }
-                return serverList;
-            }).catch(function (err) {
-                throw err;
-            });
+                if (server.length !== 8) {
+                    throw "Got error from server:\n" + body;
+                }
+            }
+            return serverList;
+        } catch (e) {
+            throw e;
+        }
+
+
     };
 
-    const getIdles = () => {
+    const getIdles = async () => {
         const req = postRequest.defaults({
             form: {
                 script: getIdleSlavesJenkinsScript()
             }
         });
-        return req(scriptUrl)
-            .then(function (body) {
-                const serverList = body.trim().split("\n");
-                if (serverList.length === 0) {
-                    throw "Didn't get any server from API";
-                }
 
-                for (const i in serverList) {
-                    const server = serverList[i].trim();
-                    if (server.length === 0) {
-                        continue;
-                    }
-                    if (server.length !== 8) {
-                        throw "Got error from server:\n" + body;
-                    }
+
+
+        try {
+            let body = await req(scriptUrl);
+            const serverList = body.trim().split("\n");
+            if (serverList.length === 0) {
+                throw "Didn't get any server from API";
+            }
+
+            for (const i in serverList) {
+                const server = serverList[i].trim();
+                if (server.length === 0) {
+                    continue;
                 }
-                return serverList;
-            }).catch(function (err) {
-                throw err;
-            });
+                if (server.length !== 8) {
+                    throw "Got error from server:\n" + body;
+                }
+            }
+            return serverList;
+        } catch (e) {
+            throw e;
+        }
+
+
     };
 
-    const findContainer = (id) => {
+    const findContainer = async (id) => {
         const listOpts = {
             all: true,
             filters: {
                 label: ['auto-deployed']
             }
         };
-        return docker.listContainers(listOpts)
-            .then(function (containers) {
-                for (const i in containers) {
-                    const container = containers[i],
-                        containerId = container.Names[0].slice(-8);
 
-                    if (containerId.trim() === id.trim()) {
-                        return container;
-                    }
+
+        try {
+            let containers = await docker.listContainers(listOpts);
+            for (const i in containers) {
+                const container = containers[i],
+                    containerId = container.Names[0].slice(-8);
+
+                if (containerId.trim() === id.trim()) {
+                    return container;
                 }
-                return null;
-            }).catch(function (err) {
-                throw err;
-            });
+            }
+            return null;
+
+        } catch (e) {
+            throw e;
+        }
     };
 
     const checkIdles = async function () {
@@ -254,7 +263,7 @@ for (Node node in jenkinsNodes)
                     const containerInfo = await scaler.inspectContainer(container.Id);
 
                     try {
-                        removeIdleHostFromJenkins(idleNodeId);
+                        await removeIdleHostFromJenkins(idleNodeId);
                     } catch (err) {
                         logger.error("%s: Container %s not registered in Jenkins", removeIdleJenkinsSlaves.pluginName, container.Id)
                     }
@@ -295,7 +304,7 @@ for (Node node in jenkinsNodes)
                         continue;
                     }
 
-                    setOldNodeOffline(nodeId);
+                    await setOldNodeOffline(nodeId);
                     logger.info("%s: Container %s (Age: %ds) was to old. Set offline.", removeIdleJenkinsSlaves.pluginName, container.Id, age);
                 } catch (err) {
                     logger.error("%s: %s", removeIdleJenkinsSlaves.pluginName, err);

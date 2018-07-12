@@ -38,8 +38,6 @@ class imagePull {
             try {
                 await this.pullImage(containerset.image);
                 logger.info("%s: Successfully pulled %s.", self.pluginName, containerset.image);
-
-                return image;
             } catch (e) {
                 logger.error("%s: Error pulling %s: %s", self.pluginName, containerset.image, e);
             }
