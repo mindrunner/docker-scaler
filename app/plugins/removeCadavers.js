@@ -8,6 +8,7 @@ const
 const removeCadavers = function (scaler) {
 
     const getDanglingImages = async function () {
+        logger.info("%s: getDanglingImages", removeCadavers.pluginName);
         const listOpts = {
             all: true,
             filters: {
@@ -23,6 +24,7 @@ const removeCadavers = function (scaler) {
     };
 
     const getNonRunningByState = async function (state) {
+        logger.info("%s: getNonRunningByState", removeCadavers.pluginName);
         const listOpts = {
             all: true,
             filters: {
@@ -65,6 +67,7 @@ const removeCadavers = function (scaler) {
     };
 
     const getDanglingVolumes = async function () {
+        logger.info("%s: getDanglingVolumes", removeCadavers.pluginName);
         const listOpts = {
             all: true,
             filters: {
@@ -82,6 +85,7 @@ const removeCadavers = function (scaler) {
     };
 
     const getDependentContainers = async function (mounts) {
+        logger.info("%s: getDependentContainers", removeCadavers.pluginName);
         let mount;
         // only saving mount ids for easier comparing.
         const mountIds = [];
@@ -133,6 +137,9 @@ const removeCadavers = function (scaler) {
         cadavers.concat(await getNonRunningByState('dead'));
 
         cadavers = uniqueArray(cadavers);
+
+
+        logger.info("%s: Found %i candidates for removing", removeCadavers.pluginName, cadavers.length);
 
         for (let i in cadavers) {
             const container = cadavers[i];
