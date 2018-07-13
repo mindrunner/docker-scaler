@@ -22,6 +22,17 @@ pipeline {
                 }
             }
         }
+        stage("Build Image for Develop") {
+            when {
+                branch 'develop'
+            }
+            steps {
+                cloud_buildDockerImage(artifactoryProject: "wzu",
+                        ocApp: 'scaler',
+                        ocAppVersion: 'latest-dev',
+                        dockerDir: ".")
+            }
+        }
         stage("Build Image for Master") {
             when {
                 branch 'master'
