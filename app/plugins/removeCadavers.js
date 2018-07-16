@@ -45,9 +45,9 @@ const removeCadavers = function (scaler) {
                 const container = containers[i];
                 // Don't remove data-containers
                 if (container.Labels['data-container'] === 'true') {
-                    log.info("Found a non-running data-container %s, searching for newer revision", container.Id);
+                    logger.info("Found a non-running data-container %s, searching for newer revision", container.Id);
                     try {
-                        log.info("Looking for the most recent conrainer with group-id %s", container.labels['group-id']);
+                        logger.info("Looking for the most recent conrainer with group-id %s", container.labels['group-id']);
                         const newestContainer = await scaler.getNewestContainerByGroupId(container.Labels['group-id']);
                         if (newestContainer.Id !== container.Id) {
                             const dependendContainers = await getDependendContainers(container.Mounts);
