@@ -54,6 +54,8 @@ const removeCadavers = function (scaler) {
                             if (dependendContainers.length === 0) {
                                 result.push(container);
                             } else {
+                                logger.debug("dependencies:");
+                                logger.debug(util.inspect(dependendContainers, {showHidden: false, depth: null}))
                                 logger.info("Container %s has dependencies, not removing", container.Id);
                             }
                         } else {
