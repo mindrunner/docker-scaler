@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage("Linting Scripts and Build Image for Feature") {
             when {
-                not { anyOf { branch 'master'; tag '*' } }
+                not { anyOf { branch 'master'; tag '*' ; branch 'develop' } }
             }
             steps {
                 script {
