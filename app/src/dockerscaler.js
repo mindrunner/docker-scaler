@@ -278,30 +278,20 @@ class DockerScaler {
 
         logger.debug('%s: Searching containers with id %s', self.pluginName, id);
 
-        // Only search for auto-deployed containers
         const listOpts = {
             all: all,
             filters: {
-                label: ['auto-deployed']
+                label: ['auto-deployed=true',
+                    'group-id=' + id]
             }
         };
 
         if (!all) {
-            // we need to hide non-running containers
             listOpts.filters.status = ['running'];
         }
 
         try {
-            let containers = await docker.listContainers(listOpts);
-
-            const containerList = [];
-            for (const i in containers) {
-                const container = containers[i];
-                if (container.Labels['group-id'] !== undefined && container.Labels['group-id'] === id) {
-                    containerList.push(container);
-                }
-            }
-            return containerList;
+            return await docker.listContainers(listOpts);
         } catch (e) {
             throw e;
         }
@@ -317,6 +307,7 @@ class DockerScaler {
         try {
             let images = await docker.listImages({});
             // Workaround for docker. They don't support filter by repotag.
+            //TODO: Use filter!!!
             for (const i in images) {
                 const image = images[i];
                 logger.debug("%s: found image: %s", self.pluginName, JSON.stringify(image));
@@ -344,9 +335,10 @@ class DockerScaler {
      */
     async getNewestContainerByGroupId(id) {
         const listOpts = {
-            all: true,
+            all: all,
             filters: {
-                label: ['auto-deployed']
+                label: ['auto-deployed=true',
+                    'group-id=' + id]
             }
         };
 
@@ -357,12 +349,10 @@ class DockerScaler {
             let result = null;
             for (const i in containers) {
                 const container = containers[i];
-                if (container.Labels['group-id'] !== undefined && container.Labels['group-id'] === id) {
-                    if (result === null) {
-                        result = container;
-                    } else if (result.Created < container.Created) {
-                        result = container;
-                    }
+                if (result === null) {
+                    result = container;
+                } else if (result.Created < container.Created) {
+                    result = container;
                 }
             }
             return result;
@@ -376,23 +366,14 @@ class DockerScaler {
             all: true,
             filters: {
                 label: [
-                    'auto-deployed',
-                    'data-container'
+                    'auto-deployed=true',
+                    'data-container=true'
                 ]
             }
         };
 
         try {
-            let containers = await docker.listContainers(listOpts);
-            // Workaround for docker. They don't support filter by label value.
-            let result = [];
-            for (const i in containers) {
-                const container = containers[i];
-                if (container.Labels['data-container'] === 'true') {
-                    result.push(container);
-                }
-            }
-            return result;
+            return await docker.listContainers(listOpts);
         } catch (e) {
             throw e;
         }
@@ -402,7 +383,7 @@ class DockerScaler {
         const listOpts = {
             filters: {
                 status: ['running'],
-                label: ['auto-deployed']
+                label: ['auto-deployed=true']
             }
         };
         return await docker.listContainers(listOpts);
