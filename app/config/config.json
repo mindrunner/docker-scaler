@@ -5,11 +5,20 @@
     "http1": {
       "image": "docker.io/httpd:latest",
       "instances": 1,
-      "pull": true
+      "pull": true,
+      "env": [
+        "master=https://ci.sbb.ch/",
+        "executors=1",
+        "slavename={{HOST_NAME}}-{{IP}}-{{CONTAINER_NAME}}",
+        "externalport={{RANDOM_PORT}}",
+        "host={{IP}}",
+        "labels=legacy {{IP}} {{PLATFORM}} {{PLATFORM}}",
+        "swarmopts=-disableClientsUniqueId -disableSslVerification"
+      ]
     }
   },
   "removeIdleJenkinsSlaves": {
-    "enabled": false,
+    "enabled": true,
     "jenkinsMaster": "https://ci-i.sbb.ch",
     "username": "fsvctip",
     "password": "sommer11",

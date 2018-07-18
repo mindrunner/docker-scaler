@@ -12,18 +12,29 @@ exports.Cleanup = function Cleanup(config) {
         logger.info('%s: Waiting all processes to finish...', "cleanup");
 
         if ((process.env.CLEANUP && process.env.CLEANUP === "true") || config.cleanup === true) {
-            const listOpts = {
-                all: true,
-                filters: {
-                    label: ['auto-deployed']
-                }
-            };
-            docker.listContainers(listOpts, function (err, containers) {
-                for (const i in containers) {
-                    const container = containers[i];
-                    helper.removeContainer(container.Id);
-                }
-            });
+            logger.info("Stopping running containers...");
+
+            for (const i in config.containers) {
+                const containerset = config.containers[i]
+
+                logger.info("Stopping containers with id %s", containerset.id);
+                const listOpts = {
+                    all: true,
+                    filters: {
+                        label: ['auto-deployed=true',
+                            'group-id=' + containerset.id]
+                    }
+                };
+                docker.listContainers(listOpts, function (err, containers) {
+                    for (const i in containers) {
+                        const container = containers[i];
+                        helper.removeContainer(container.Id);
+                    }
+                });
+            }
+            logger.info("... done stopping running containers!");
+        } else {
+            logger.info("Not stopping any containers, cleanup=false!");
         }
     });
 
