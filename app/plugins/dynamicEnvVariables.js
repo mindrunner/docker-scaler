@@ -112,6 +112,24 @@ const dynamicEnvVariablesPlugin = function (scaler) {
         } catch (e) {
             logger.error("Could not resolve hostname: %s", e);
         }
+
+
+        //10.104.132.xxx -> NCSI
+        //10.171.160.xxx -> AWS
+        //10.171.161.xxx -> AWS
+        dynamicVariables["{{PLATFORM}}"] = "unknown"
+        if(dynamicVariables["{{IP}}"].indexOf("10.104.132.") > -1) {
+            dynamicVariables["{{PLATFORM}}"] = "ncsi"
+        }
+
+        if(dynamicVariables["{{IP}}"].indexOf("10.171.160.") > -1) {
+            dynamicVariables["{{PLATFORM}}"] = "aws"
+        }
+
+        if(dynamicVariables["{{IP}}"].indexOf("10.171.161.") > -1) {
+            dynamicVariables["{{PLATFORM}}"] = "aws"
+        }
+
         return dynamicVariables;
     }
 };

@@ -2,6 +2,7 @@
 
 const
     helper = require('../src/helper'),
+    util = require('util'),
     logger = helper.Logger.getInstance(),
     docker = helper.Docker.getInstance();
 
@@ -44,14 +45,21 @@ const removeCadavers = function (scaler) {
                 const container = containers[i];
                 // Don't remove data-containers
                 if (container.Labels['data-container'] === 'true') {
+                    logger.info("Found a non-running data-container %s, searching for newer revision", container.Id);
                     try {
+                        logger.info("Looking for the most recent conrainer with group-id %s", container.Labels['group-id']);
                         const newestContainer = await scaler.getNewestContainerByGroupId(container.Labels['group-id']);
-
                         if (newestContainer.Id !== container.Id) {
-                            const dependentContainers = await getDependentContainers(container.Mounts);
-                            if (dependentContainers.length === 0) {
-                                result.push(container); // Not the newest and no dependent containers. Remove.
+                            const dependendContainers = await getDependendContainers(container.Mounts);
+                            if (dependendContainers.length === 0) {
+                                result.push(container);
+                            } else {
+                                logger.debug("dependencies:");
+                                logger.debug(util.inspect(dependendContainers, {showHidden: false, depth: null}))
+                                logger.info("Container %s has dependencies, not removing", container.Id);
                             }
+                        } else {
+                            logger.info("No newer containers found.");
                         }
                     } catch (err) {
                         logger.error("%s: Couldn't get dependent containers: %s", removeCadavers.pluginName, err);
@@ -84,8 +92,8 @@ const removeCadavers = function (scaler) {
         }
     };
 
-    const getDependentContainers = async function (mounts) {
-        logger.info("%s: getDependentContainers", removeCadavers.pluginName);
+    const getDependendContainers = async function (mounts) {
+        logger.info("%s: getDependendContainers", removeCadavers.pluginName);
         let mount;
         // only saving mount ids for easier comparing.
         const mountIds = [];
@@ -132,14 +140,19 @@ const removeCadavers = function (scaler) {
         logger.debug("%s: Searching cadavers...", removeCadavers.pluginName);
 
         let cadavers = [];
-        cadavers = cadavers.concat(await getNonRunningByState('created'));
-        cadavers = cadavers.concat(await getNonRunningByState('exited'));
-        cadavers = cadavers.concat(await getNonRunningByState('dead'));
+        let created = await getNonRunningByState('created');
+        let exited = await getNonRunningByState('exited');
+        let dead = await getNonRunningByState('dead');
 
+        logger.info("%s: Found %i created contianers", removeCadavers.pluginName, created.length);
+        logger.info("%s: Found %i exited contianers", removeCadavers.pluginName, exited.length);
+        logger.info("%s: Found %i dead contianers", removeCadavers.pluginName, dead.length);
+
+        cadavers = cadavers.concat(created, exited, dead);
         cadavers = uniqueArray(cadavers);
 
-
         logger.info("%s: Found %i candidates for removing", removeCadavers.pluginName, cadavers.length);
+        logger.debug(util.inspect(cadavers, {showHidden: false, depth: null}))
 
         for (let i in cadavers) {
             const container = cadavers[i];
