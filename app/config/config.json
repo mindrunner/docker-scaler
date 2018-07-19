@@ -6,6 +6,16 @@
       "image": "docker.io/httpd:latest",
       "instances": 1,
       "pull": true,
+      "Memory": 4000000000,
+      "MemorySwap": -1,
+      "CpuPercent": 100,
+      "Ulimits": [
+        {
+          "Name": "fsize",
+          "Hard": 2000000000,
+          "Soft": 2000000000
+        }
+      ],
       "env": [
         "master=https://ci.sbb.ch/",
         "executors=1",
