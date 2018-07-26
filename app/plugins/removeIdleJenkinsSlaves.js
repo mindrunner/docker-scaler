@@ -185,7 +185,7 @@ for (Node node in jenkinsNodes)
     };
 
     const getIdles = async () => {
-        const req = postRequest.defaults({
+        const idlesRequest = postRequest.defaults({
             form: {
                 script: getIdleSlavesJenkinsScript()
             }
@@ -194,7 +194,7 @@ for (Node node in jenkinsNodes)
 
 
         try {
-            let body = await req(scriptUrl);
+            let body = await idlesRequest(scriptUrl);
             const serverList = body.trim().split("\n");
             if (serverList.length === 0) {
                 throw "Didn't get any server from API";

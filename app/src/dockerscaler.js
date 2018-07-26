@@ -337,7 +337,7 @@ class DockerScaler {
      */
     async getNewestContainerByGroupId(id) {
         const listOpts = {
-            all: all,
+            all: true,
             filters: {
                 label: ['auto-deployed=true',
                     'group-id=' + id]
