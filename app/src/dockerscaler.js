@@ -6,7 +6,8 @@ const
     helper = require('./helper'),
     hookException = require('./exceptions/hookException'),
     logger = helper.Logger.getInstance(),
-    docker = helper.Docker.getInstance();
+    docker = helper.Docker.getInstance(),
+    interval = [];
 
 class DockerScaler {
 
@@ -55,7 +56,7 @@ class DockerScaler {
 
         logger.level = this.config.logLevel;
         logger.debug("%s: %s", this.pluginName, JSON.stringify(this.config));
-        cleanup.Cleanup(this.config);
+        cleanup.Cleanup(this, this.config);
     }
 
     /**
@@ -80,11 +81,14 @@ class DockerScaler {
             // old (1.10) and new (1.12) docker versions.
             containerset.image = containerset.image.replace(/^(docker.io\/)/, "");
 
-            if (containerset.isDataContainer) {
-                this.spawnDataContainer(containerset);
-            } else {
-                this.spawnWorkerContainer(containerset);
-            }
+            const self = this;
+            interval.push(setInterval(function () {
+                if (containerset.isDataContainer) {
+                    self.spawnDataContainer(containerset);
+                } else {
+                    self.spawnWorkerContainer(containerset);
+                }
+            }, self.config.scaleInterval * 1000));
         }
     }
 
@@ -115,10 +119,7 @@ class DockerScaler {
 
         }
 
-        // restart process when finished
-        helper.Timer.add(function () {
-            self.spawnWorkerContainer(containerset);
-        }, self.config.scaleInterval * 1000);
+
     }
 
     /**
@@ -174,10 +175,6 @@ class DockerScaler {
             logger.error("%s: Couldn't count running containers: %s", self.pluginName, e);
         }
 
-        // restart process when finished
-        helper.Timer.add(function () {
-            self.spawnDataContainer(containerset);
-        }, self.config.scaleInterval * 1000);
     }
 
 
@@ -441,8 +438,18 @@ class DockerScaler {
     }
 
     loadPlugin(plugin) {
-        logger.info("%s: Found %s plugin...", this.pluginName, plugin.pluginName);
+        logger.info("%s: Loading %s plugin...", this.pluginName, plugin.pluginName);
         this.plugins[plugin.pluginName] = new plugin(this);
+    }
+
+    unloadPlugin(plugin) {
+        logger.info("%s: Unloading %s plugin...", this.pluginName, plugin.pluginName);
+        try {
+            plugin.deinit();
+
+        } catch (e) {
+            logger.info("%s has no deinit", plugin.pluginName);
+        }
     }
 
     async runHook(hook) {
@@ -482,6 +489,13 @@ class DockerScaler {
      */
     static generateId(len) {
         return crypto.randomBytes(len).toString('hex').substr(len);
+    }
+
+
+    deinit() {
+        interval.forEach(function (item) {
+            clearInterval(item);
+        });
     }
 }
 

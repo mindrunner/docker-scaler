@@ -60,27 +60,6 @@ exports.Docker = (function () {
     };
 })();
 
-exports.Timer = (function () {
-    let timers = [],
-        run = true;
-
-    return {
-        add: function (cb, time) {
-            timers.push(setTimeout(function () {
-                if (run) {
-                    cb();
-                }
-            }, time));
-        },
-        clearAll: function () {
-            run = false;
-            for (const i in timers) {
-                clearTimeout(timers[i]);
-            }
-        }
-    };
-})();
-
 exports.removeContainer = function (containerId) {
     const docker = exports.Docker.getInstance(),
         logger = exports.Logger.getInstance(),

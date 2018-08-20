@@ -4,7 +4,8 @@ const
     helper = require('../src/helper'),
     util = require('util'),
     logger = helper.Logger.getInstance(),
-    docker = helper.Docker.getInstance();
+    docker = helper.Docker.getInstance(),
+    interval = [];
 
 const removeCadavers = function (scaler) {
 
@@ -207,16 +208,19 @@ const removeCadavers = function (scaler) {
             }
         }
 
-        helper.Timer.add(function () {
-            checkCadavers()
-        }, scaler.config.removeCadavers.checkInterval * 1000);
     };
 
-    if (scaler.config.removeCadavers.enabled) {
-        checkCadavers();
-    }
+    interval.push(setInterval(function () {
+        if (scaler.config.removeCadavers.enabled) {
+            checkCadavers();
+        }
+    }, scaler.config.removeCadavers.checkInterval * 1000));
 };
 
 removeCadavers.pluginName = "removeCadavers";
-
+removeCadavers.deinit = function () {
+    interval.forEach(function (item) {
+        clearInterval(item);
+    });
+};
 module.exports = removeCadavers;

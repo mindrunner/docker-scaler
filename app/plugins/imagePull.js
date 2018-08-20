@@ -4,7 +4,8 @@ const
     helper = require('../src/helper'),
     util = require('util'),
     logger = helper.Logger.getInstance(),
-    docker = helper.Docker.getInstance();
+    docker = helper.Docker.getInstance(),
+    interval = [];
 
 /**
  * This plugin allows pulling of images
@@ -19,10 +20,15 @@ class imagePull {
     constructor(scaler) {
         this.scaler = scaler;
         this.pluginName = "imagePull";
+        const self = this;
 
         for (const i in this.scaler.config.containers) {
-            const containerset = this.scaler.config.containers[i];
-            this.pullContainerset(containerset);
+            interval.push(setInterval(function () {
+                const containerset = this.scaler.config.containers[i];
+                self.pullContainerset(containerset);
+            }, self.scaler.config.pullInterval * 1000));
+
+
         }
     }
 
@@ -41,9 +47,6 @@ class imagePull {
             } catch (e) {
                 logger.error("%s: Error pulling %s: %s", self.pluginName, containerset.image, e);
             }
-            helper.Timer.add(function () {
-                self.pullContainerset(containerset);
-            }, self.scaler.config.pullInterval * 1000);
         }
     }
 
@@ -92,5 +95,11 @@ class imagePull {
 }
 
 imagePull.pluginName = "imagePull";
+
+imagePull.deinit = function () {
+    interval.forEach(function(item) {
+        clearInterval(item);
+    });
+};
 
 module.exports = imagePull;

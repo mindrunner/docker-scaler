@@ -4,7 +4,8 @@ const
     request = require('request-promise-native'),
     helper = require('../src/helper'),
     logger = helper.Logger.getInstance(),
-    docker = helper.Docker.getInstance();
+    docker = helper.Docker.getInstance(),
+    interval = [];
 
 // Use this to debug HTTP Requests
 // require('request-debug')(request);
@@ -192,7 +193,6 @@ for (Node node in jenkinsNodes)
         });
 
 
-
         try {
             let body = await idlesRequest(scriptUrl);
             const serverList = body.trim().split("\n");
@@ -354,16 +354,25 @@ for (Node node in jenkinsNodes)
         await checkAge();
         await checkIdles();
 
-        helper.Timer.add(function () {
-            checkSlaves();
-        }, scaler.config.removeIdleJenkinsSlaves.checkInterval * 1000);
     };
 
-    if (scaler.config.removeIdleJenkinsSlaves.enabled) {
-        checkSlaves();
-    }
+
+    interval.push(setInterval(function () {
+        if (scaler.config.removeIdleJenkinsSlaves.enabled) {
+            checkSlaves();
+        }
+    }, scaler.config.removeIdleJenkinsSlaves.checkInterval * 1000));
+
+
+};
+
+removeIdleJenkinsSlaves.deinit = function () {
+    interval.forEach(function (item) {
+        clearInterval(item);
+    });
 };
 
 removeIdleJenkinsSlaves.pluginName = "removeIdleJenkinsSlaves";
+
 
 module.exports = removeIdleJenkinsSlaves;
