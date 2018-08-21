@@ -32,9 +32,9 @@ class ImagePullPlugin extends Plugin {
         const self = this;
         try {
             await this.pullImage(containerset.image);
-            this._logger.info("%s: Successfully pulled %s.", self.pluginName, containerset.image);
+            this._logger.info("%s: Successfully pulled %s.", this.getName(), containerset.image);
         } catch (e) {
-            this._logger.error("%s: Error pulling %s: %s", self.pluginName, containerset.image, e);
+            this._logger.error("%s: Error pulling %s: %s", this.getName(), containerset.image, e);
         }
     }
 
@@ -55,12 +55,12 @@ class ImagePullPlugin extends Plugin {
         try {
             if (self._scaler.config.auth !== {}) {
                 pullOpts.authconfig = self._scaler.config.auth;
-                this._logger.info("%s: Pulling image: %s as %s user", self.pluginName, image, pullOpts.authconfig.username);
+                this._logger.info("%s: Pulling image: %s as %s user", this.getName(), image, pullOpts.authconfig.username);
             } else {
-                this._logger.info("%s: Pulling image: %s as anonymous user", self.pluginName, image);
+                this._logger.info("%s: Pulling image: %s as anonymous user", this.getName(), image);
             }
         } catch (e) {
-            this._logger.warn("%s: Something went wrong with the authconfig: %s", self.pluginName, e);
+            this._logger.warn("%s: Something went wrong with the authconfig: %s", this.getName(), e);
         }
 
         const stream = await this._docker.pull(image, pullOpts);
@@ -71,11 +71,11 @@ class ImagePullPlugin extends Plugin {
                 && event.progressDetail.current !== undefined
                 && event.progressDetail.total !== undefined) {
                 const percent = Math.round(100 / event.progressDetail.total * event.progressDetail.current);
-                this._logger.debug('%s: %s: %s (%d%)', self.pluginName, event.id, event.status, percent);
+                this._logger.debug('%s: %s: %s (%d%)', this.getName(), event.id, event.status, percent);
             } else if (event.id !== undefined) {
-                this._logger.debug('%s: %s: %s', self.pluginName, event.id, event.status);
+                this._logger.debug('%s: %s: %s', this.getName(), event.id, event.status);
             } else {
-                this._logger.debug('%s: %s', self.pluginName, event.status);
+                this._logger.debug('%s: %s', this.getName(), event.status);
             }
         });
         stream.on('end', () => this._logger.info(`End pulling ${image}`));
