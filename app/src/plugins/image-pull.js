@@ -18,7 +18,7 @@ class ImagePullPlugin extends Plugin {
                     self.pullContainerset(containerset);
                 }, self._scaler.config.pullInterval * 1000));
             } else {
-                this._logger.info("%s: Pul;ling disabled for %s", this.getName(), containerset.name);
+                this._logger.info("%s: Pulling disabled for %s", this.getName(), containerset.name);
             }
         }
     }
