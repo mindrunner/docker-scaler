@@ -24,7 +24,7 @@ class imagePull {
 
         for (const i in this.scaler.config.containers) {
             interval.push(setInterval(function () {
-                const containerset = this.scaler.config.containers[i];
+                const containerset = self.scaler.config.containers[i];
                 self.pullContainerset(containerset);
             }, self.scaler.config.pullInterval * 1000));
 

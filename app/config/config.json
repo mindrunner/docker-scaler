@@ -1,17 +1,9 @@
 {
-  "scaleInterval": 30,
+  "scaleInterval": 3,
   "containers": {
-    "android-ng-i": {
-      "image": "docker.bin.sbb.ch/wzu/jenkins-slave-java:latest-dev",
+    "android-ng-i-local-test": {
+      "image": "schweizerischebundesbahnen/wzu-jenkins-slave-java:latest-dev",
       "instances": 3,
-      "Ulimits": [
-        {
-          "Name": "fsize",
-          "Hard": 2000000000,
-          "Soft": 2000000000
-        }
-      ],
-      "privileged": true,
       "env": [
         "master=https://mobile-i.ci.sbb.ch",
         "executors=1",
@@ -20,7 +12,7 @@
         "slavename={{HOST_NAME}}-{{IP}}-{{CONTAINER_NAME}}",
         "externalport={{RANDOM_PORT}}",
         "host={{IP}}",
-        "labels=android android-release android-emulator {{IP}} {{PLATFORM}}",
+        "labels={{IP}} {{PLATFORM}}",
         "swarmopts=-disableClientsUniqueId -disableSslVerification -tunnel=mobile-i-direct.wzu.io:50005"
       ],
       "pull": true,
@@ -33,13 +25,6 @@
         "deploy.sbb.ch:192.168.148.57",
         "master.ose.sbb-cloud.net:192.168.148.57",
         "lb01a.ose.sbb-aws.net:192.168.148.57"
-      ],
-      "randomPort": true,
-      "randomPorts": [
-        1044
-      ],
-      "volumes": [
-        "android-sdk:/opt/android-sdk-linux"
       ]
     }
   },
@@ -48,12 +33,12 @@
     "jenkinsMaster": "https://mobile-i.ci.sbb.ch",
     "username": "fsvctip",
     "password": "sommer11",
-    "checkInterval": 30,
-    "maxAge": 600
+    "checkInterval": 1,
+    "maxAge": 30
   },
   "removeCadavers": {
     "enabled": true,
-    "checkInterval": 30
+    "checkInterval": 1
   },
   "auth": {
     "serveraddress": "https://docker.bin.sbb.ch",
