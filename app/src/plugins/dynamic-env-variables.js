@@ -1,50 +1,25 @@
-'use strict';
-
+const Plugin = require('../plugin');
 const fs = require('fs'),
-    helper = require('../src/helper'),
     os = require("os"),
     request = require('request-promise-native'),
     dns = require('dns'),
-    dnsPromises = dns.promises,
-    logger = helper.Logger.getInstance();
+    dnsPromises = dns.promises;
 
+class DynamicEnvVariablesPlugin extends Plugin {
 
-const dynamicEnvVariablesPlugin = function (scaler) {
+    constructor(scaler) {
+        super("DynamicEnvVariablesPlugin", scaler);
+    }
 
-    scaler.hooks.beforeCreateLate.push(async function (config, args) {
-        const
-            containerConfig = args[2],
-            dynamicVariables = await getDynamicVariables();
-
-        dynamicVariables['{{CONTAINER_NAME}}'] = containerConfig.name;
-
-        for (const i in containerConfig.Env) {
-            const env = containerConfig.Env[i];
-            let envKey = env.substr(0, env.indexOf('='));
-            let envValue = env.substr(env.indexOf('=') + 1);
-
-            containerConfig.Env[i] = envKey + "=" + replaceDynamicVariables(dynamicVariables, envValue);
-
-            // allowing copy of env variables
-            for (const j in containerConfig.Env) {
-                const envs = containerConfig.Env[j];
-                envKey = envs.substr(0, envs.indexOf('='));
-                envValue = envs.substr(envs.indexOf('=') + 1);
-                containerConfig.Env[i] = containerConfig.Env[i].replace("{{" + envKey + "}}", envValue);
-            }
-        }
-    });
-
-    function replaceDynamicVariables(dynamicVariables, string) {
+    static replaceDynamicVariables(dynamicVariables, string) {
         for (const i in dynamicVariables) {
             string = string.replace(i, dynamicVariables[i]);
         }
-
         return string;
     }
 
-    async function getDynamicVariables() {
-        let dockerInfo = await scaler.getDockerInfo();
+    async getDynamicVariables() {
+        let dockerInfo = await this._scaler.getDockerInfo();
 
         const dynamicVariables = {
             "{{SERVER_VERSION}}": dockerInfo.ServerVersion,
@@ -70,9 +45,9 @@ const dynamicEnvVariablesPlugin = function (scaler) {
             try {
 
                 let result = await dnsPromises.lookup(name);
-                logger.info("Got IP: " + result.address);
+                this._logger.info("Got IP: " + result.address);
                 return result.address;
-            }catch (e) {
+            } catch (e) {
                 throw e;
             }
         };
@@ -94,10 +69,10 @@ const dynamicEnvVariablesPlugin = function (scaler) {
         let hostname = "localhost";
 
         if (fs.existsSync('/.dockerenv')) {
-            logger.debug("Found docker environment, Hostname: %s", dockerInfo.Name);
+            this._logger.debug("Found docker environment, Hostname: %s", dockerInfo.Name);
             hostname = dockerInfo.Name;
         } else {
-            logger.debug("Found non-docker environment, Hostname: %s", os.hostname());
+            this._logger.debug("Found non-docker environment, Hostname: %s", os.hostname());
             hostname = os.hostname();
         }
 
@@ -110,7 +85,7 @@ const dynamicEnvVariablesPlugin = function (scaler) {
         try {
             dynamicVariables["{{IP}}"] = await checkIp();
         } catch (e) {
-            logger.error("Could not resolve hostname: %s", e);
+            this._logger.error("Could not resolve hostname: %s", e);
         }
 
 
@@ -118,22 +93,42 @@ const dynamicEnvVariablesPlugin = function (scaler) {
         //10.171.160.xxx -> AWS
         //10.171.161.xxx -> AWS
         dynamicVariables["{{PLATFORM}}"] = "unknown"
-        if(dynamicVariables["{{IP}}"].indexOf("10.104.132.") > -1) {
+        if (dynamicVariables["{{IP}}"].indexOf("10.104.132.") > -1) {
             dynamicVariables["{{PLATFORM}}"] = "ncsi"
         }
 
-        if(dynamicVariables["{{IP}}"].indexOf("10.171.160.") > -1) {
+        if (dynamicVariables["{{IP}}"].indexOf("10.171.160.") > -1) {
             dynamicVariables["{{PLATFORM}}"] = "aws"
         }
 
-        if(dynamicVariables["{{IP}}"].indexOf("10.171.161.") > -1) {
+        if (dynamicVariables["{{IP}}"].indexOf("10.171.161.") > -1) {
             dynamicVariables["{{PLATFORM}}"] = "aws"
         }
 
         return dynamicVariables;
     }
-};
 
-dynamicEnvVariablesPlugin.pluginName = "dynamicEnvVariables";
+    async beforeCreateLate(config, containerset, containersetConfig) {
+        const dynamicVariables = await this.getDynamicVariables();
 
-module.exports = dynamicEnvVariablesPlugin;
+        dynamicVariables['{{CONTAINER_NAME}}'] = containersetConfig.name;
+
+        for (const i in containersetConfig.Env) {
+            const env = containersetConfig.Env[i];
+            let envKey = env.substr(0, env.indexOf('='));
+            let envValue = env.substr(env.indexOf('=') + 1);
+
+            containersetConfig.Env[i] = envKey + "=" + DynamicEnvVariablesPlugin.replaceDynamicVariables(dynamicVariables, envValue);
+
+            // allowing copy of env variables
+            for (const j in containersetConfig.Env) {
+                const envs = containersetConfig.Env[j];
+                envKey = envs.substr(0, envs.indexOf('='));
+                envValue = envs.substr(envs.indexOf('=') + 1);
+                containersetConfig.Env[i] = containersetConfig.Env[i].replace("{{" + envKey + "}}", envValue);
+            }
+        }
+    }
+}
+
+module.exports = DynamicEnvVariablesPlugin;

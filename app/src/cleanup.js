@@ -11,11 +11,6 @@ exports.Cleanup = function Cleanup(scaler, config) {
     process.on('cleanup', function () {
         logger.info('%s: Cleaning up...', "cleanup");
 
-        const plugins = fs.readdirSync(path.resolve(__dirname, "../plugins"));
-        for (const i in plugins) {
-            const plugin = require("../plugins/" + plugins[i]);
-            scaler.unloadPlugin(plugin);
-        }
 
         scaler.deinit();
 

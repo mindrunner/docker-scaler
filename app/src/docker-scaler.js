@@ -1,10 +1,12 @@
-'use strict';
-
 const
     crypto = require('crypto'),
     cleanup = require('./cleanup'),
     helper = require('./helper'),
-    hookException = require('./exceptions/hookException'),
+    fs = require('fs'),
+    path = require('path'),
+    Plugin = require('./plugin'),
+
+    hookException = require('./exceptions/hook-exception'),
     logger = helper.Logger.getInstance(),
     docker = helper.Docker.getInstance(),
     interval = [];
@@ -47,15 +49,16 @@ class DockerScaler {
         };
 
         this.config = Object.assign(this.defaultConfig, config);
-        this.plugins = {};
-        this.hooks = {
-            beforeCreate: [],
-            beforeCreateLate: []
-        };
+        this.plugins = [];
+
+        this._beforeCreateHook = [];
+        this._beforeCreateLateHook = [];
 
 
         logger.level = this.config.logLevel;
         logger.debug("%s: %s", this.pluginName, JSON.stringify(this.config));
+
+
         cleanup.Cleanup(this, this.config);
     }
 
@@ -82,6 +85,24 @@ class DockerScaler {
             containerset.image = containerset.image.replace(/^(docker.io\/)/, "");
 
             const self = this;
+
+            const plugins = fs.readdirSync(path.resolve(__dirname, "plugins"));
+            for (const i in plugins) {
+                const PluginImpl = require("./plugins/" + plugins[i]);
+                if (PluginImpl.prototype instanceof Plugin) {
+                    const plugin = new PluginImpl(this);
+                    logger.info("Found new Plugin: %s", plugin.getName());
+                    this.loadPlugin(plugin);
+                }
+            }
+
+            if (containerset.isDataContainer) {
+                self.spawnDataContainer(containerset);
+            } else {
+                self.spawnWorkerContainer(containerset);
+            }
+
+
             interval.push(setInterval(function () {
                 if (containerset.isDataContainer) {
                     self.spawnDataContainer(containerset);
@@ -90,6 +111,8 @@ class DockerScaler {
                 }
             }, self.config.scaleInterval * 1000));
         }
+
+
     }
 
     /**
@@ -232,8 +255,8 @@ class DockerScaler {
         }
 
         try {
-            await self.runHook('beforeCreate', containerset, containersetConfig);
-            await self.runHook('beforeCreateLate', containerset, containersetConfig);
+            await self.runHooks(containerset, containersetConfig);
+            await self.runLateHooks(containerset, containersetConfig);
         } catch (err) {
             if (err instanceof hookException) {
                 throw err.message;
@@ -246,7 +269,6 @@ class DockerScaler {
         } catch (err) {
             throw err;
         }
-
     }
 
     async startContainer(container) {
@@ -438,25 +460,31 @@ class DockerScaler {
     }
 
     loadPlugin(plugin) {
-        logger.info("%s: Loading %s plugin...", this.pluginName, plugin.pluginName);
-        this.plugins[plugin.pluginName] = new plugin(this);
+        logger.info("%s: Loading %s plugin...", this.pluginName, plugin.getName());
+        plugin.init();
+        this.plugins.push(plugin);
     }
 
     unloadPlugin(plugin) {
-        logger.info("%s: Unloading %s plugin...", this.pluginName, plugin.pluginName);
+        logger.info("%s: Unloading %s plugin...", this.pluginName, plugin.getName());
         try {
             plugin.deinit();
-
         } catch (e) {
-            logger.info("%s has no deinit", plugin.pluginName);
+            logger.error("Deinitialization of Plugin %s failed", plugin.getName());
         }
     }
 
-    async runHook(hook) {
-        const args = Array.prototype.slice.call(arguments);
+    async runHooks(containerset, containersetConfig) {
+        for (const i in this._beforeCreateHook) {
+            const plugin = this._beforeCreateHook[i];
+            await plugin.beforeCreate(this.config, containerset, containersetConfig);
+        }
+    }
 
-        for (const i in this.hooks[hook]) {
-            await this.hooks[hook][i](this.config, args);
+    async runLateHooks(containerset, containersetConfig) {
+        for (const i in this._beforeCreateLateHook) {
+            const plugin = this._beforeCreateLateHook[i];
+            await plugin.beforeCreateLate(this.config, containerset, containersetConfig);
         }
     }
 
@@ -493,10 +521,15 @@ class DockerScaler {
 
 
     deinit() {
+        const self = this;
+        this.plugins.forEach(function (item) {
+            self.unloadPlugin(item)
+        });
+
         interval.forEach(function (item) {
             clearInterval(item);
         });
     }
 }
 
-exports.DockerScaler = DockerScaler;
+module.exports = DockerScaler;
