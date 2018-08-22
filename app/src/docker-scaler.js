@@ -66,6 +66,17 @@ class DockerScaler {
      * Initializes the scaler and starts all services the first time
      */
     init() {
+        const self = this;
+
+        const plugins = fs.readdirSync(path.resolve(__dirname, "plugins"));
+        for (const i in plugins) {
+            const PluginImpl = require("./plugins/" + plugins[i]);
+            if (PluginImpl.prototype instanceof Plugin) {
+                const plugin = new PluginImpl(this);
+                logger.info("Found new Plugin: %s", plugin.getName());
+                this.loadPlugin(plugin);
+            }
+        }
         for (const i in this.config.containers) {
             const
                 defaultConfig = JSON.parse(JSON.stringify(this.defaultContainersetConfig)), // copy the variables, otherwise they are referenced
@@ -84,18 +95,6 @@ class DockerScaler {
             // old (1.10) and new (1.12) docker versions.
             containerset.image = containerset.image.replace(/^(docker.io\/)/, "");
 
-            const self = this;
-
-            const plugins = fs.readdirSync(path.resolve(__dirname, "plugins"));
-            for (const i in plugins) {
-                const PluginImpl = require("./plugins/" + plugins[i]);
-                if (PluginImpl.prototype instanceof Plugin) {
-                    const plugin = new PluginImpl(this);
-                    logger.info("Found new Plugin: %s", plugin.getName());
-                    this.loadPlugin(plugin);
-                }
-            }
-
             if (containerset.isDataContainer) {
                 self.spawnDataContainer(containerset);
             } else {
@@ -111,8 +110,6 @@ class DockerScaler {
                 }
             }, self.config.scaleInterval * 1000));
         }
-
-
     }
 
     /**

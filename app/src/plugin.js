@@ -8,8 +8,7 @@ class Plugin {
         this._logger = helper.Logger.getInstance();
         this._docker = helper.Docker.getInstance();
         this._intervals = [];
-        this._scaler._beforeCreateHook.push(this);
-        this._scaler._beforeCreateLateHook.push(this);
+
     }
 
     getName() {
@@ -21,6 +20,8 @@ class Plugin {
         this._intervals.push(setInterval(function () {
             self._logger.info("%s: Plugin heartbeat.", self.getName());
         }, 60000));
+        this._scaler._beforeCreateHook.push(this);
+        this._scaler._beforeCreateLateHook.push(this);
     }
 
     deinit() {

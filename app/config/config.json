@@ -1,6 +1,14 @@
 {
   "scaleInterval": 30,
   "containers": {
+    "bash": {
+      "image": "bash",
+      "instances": 3,
+      "pull": true,
+      "volumes": [
+        "android-sdk:/opt/android-sdk-linux"
+      ]
+    },
     "android-ng-i-local-test": {
       "image": "schweizerischebundesbahnen/wzu-jenkins-slave-java:latest-dev",
       "instances": 3,
@@ -25,6 +33,9 @@
         "deploy.sbb.ch:192.168.148.57",
         "master.ose.sbb-cloud.net:192.168.148.57",
         "lb01a.ose.sbb-aws.net:192.168.148.57"
+      ],
+      "volumes": [
+        "android-sdk:/opt/android-sdk-linux"
       ]
     }
   },
