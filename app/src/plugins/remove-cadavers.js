@@ -38,7 +38,7 @@ class RemoveCadaversPlugin extends Plugin {
         }
     };
 
-   async getNonRunningByState(state) {
+   async getNonRunningByState(state, id) {
         this._logger.info("%s: getNonRunningByState", this.getName());
         const listOpts = {
             all: true,
@@ -147,19 +147,24 @@ class RemoveCadaversPlugin extends Plugin {
         this._logger.debug("%s: Searching cadavers...", this.getName());
 
         let cadavers = [];
-        let created = await this.getNonRunningByState('created');
-        let exited = await this.getNonRunningByState('exited');
-        let dead = await this.getNonRunningByState('dead');
 
-        this._logger.info("%s: Found %i created contianers", this.getName(), created.length);
-        this._logger.info("%s: Found %i exited contianers", this.getName(), exited.length);
-        this._logger.info("%s: Found %i dead contianers", this.getName(), dead.length);
 
-        cadavers = cadavers.concat(created, exited, dead);
-        cadavers = this.uniqueArray(cadavers);
+        for (const i in this._scaler.config.containers) {
+            const id = this._scaler.config.containers[i].id;
+            let created = await this.getNonRunningByState('created', id);
+            let exited = await this.getNonRunningByState('exited', id);
+            let dead = await this.getNonRunningByState('dead', id);
+
+            this._logger.info("%s: Found %i created %s containers", this.getName(), created.length, id);
+            this._logger.info("%s: Found %i exited %s containers", this.getName(), exited.length, id);
+            this._logger.info("%s: Found %i dead %s containers", this.getName(), dead.length, id);
+
+            cadavers = cadavers.concat(created, exited, dead);
+            cadavers = this.uniqueArray(cadavers);
+        }
 
         this._logger.info("%s: Found %i candidates for removing", this.getName(), cadavers.length);
-        this._logger.debug(util.inspect(cadavers, {showHidden: false, depth: null}))
+        this._logger.debug(util.inspect(cadavers, {showHidden: false, depth: null}));
 
         for (let i in cadavers) {
             const container = cadavers[i];
