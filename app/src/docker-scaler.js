@@ -246,11 +246,6 @@ class DockerScaler {
             ExtraHosts: containerset.ExtraHosts
         };
 
-        // Workaround for old versions of scaler @TODO remove when not needed anymore
-        if (containerset.isDataContainer) {
-            containersetConfig.Labels['norestart'] = 'true';
-        }
-
         try {
             await self.runHooks(containerset, containersetConfig);
             await self.runLateHooks(containerset, containersetConfig);
@@ -324,8 +319,6 @@ class DockerScaler {
         const self = this;
         try {
             let images = await docker.listImages({});
-            // Workaround for docker. They don't support filter by repotag.
-            //TODO: Use filter!!!
             for (const i in images) {
                 const image = images[i];
                 logger.debug("%s: found image: %s", self.pluginName, JSON.stringify(image));
