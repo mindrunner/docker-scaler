@@ -9,6 +9,9 @@ class ImagePullPlugin extends Plugin {
      */
     constructor(scaler) {
         super("ImagePullPlugin", scaler);
+    }
+
+    init() {
         const self = this;
         for (const i in this._scaler.config.containers) {
             const containerset = self._scaler.config.containers[i];

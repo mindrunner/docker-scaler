@@ -2,7 +2,7 @@
   "scaleInterval": 30,
   "containers": {
     "bash": {
-      "image": "bash",
+      "image": "docker.bin.sbb.ch/bash:latest",
       "instances": 3,
       "pull": true,
       "volumes": [
@@ -10,7 +10,7 @@
       ]
     },
     "android-ng-i-local-test": {
-      "image": "schweizerischebundesbahnen/wzu-jenkins-slave-java:latest-dev",
+      "image": "docker.bin.sbb.ch/schweizerischebundesbahnen/wzu-jenkins-slave-java:latest-dev",
       "instances": 3,
       "env": [
         "master=https://mobile-i.ci.sbb.ch",

@@ -44,10 +44,8 @@ class RemoveCadaversPlugin extends Plugin {
             all: true,
             filters: {
                 status: [state],
-                filters: {
                     label: ['auto-deployed=true',
                         'group-id=' + id]
-                }
             }
         };
 
