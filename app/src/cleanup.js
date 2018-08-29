@@ -1,14 +1,19 @@
 'use strict';
 
 const helper = require('./helper'),
+    fs = require('fs'),
+    path = require('path'),
     docker = helper.Docker.getInstance(),
     logger = helper.Logger.getInstance();
 
-exports.Cleanup = function Cleanup(config) {
+exports.Cleanup = function Cleanup(scaler, config) {
     logger.debug("Inititalizing Cleanup hooks");
     process.on('cleanup', function () {
         logger.info('%s: Cleaning up...', "cleanup");
-        helper.Timer.clearAll();
+
+
+        scaler.deinit();
+
         logger.info('%s: Waiting all processes to finish...', "cleanup");
 
         if ((process.env.CLEANUP && process.env.CLEANUP === "true") || config.cleanup === true) {

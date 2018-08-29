@@ -1,43 +1,55 @@
 {
-  "scaleInterval": 10,
-  "pullInterval": 60,
+  "scaleInterval": 30,
   "containers": {
-    "http1": {
-      "image": "docker.io/httpd:latest",
-      "instances": 1,
+    "bash": {
+      "image": "docker.bin.sbb.ch/bash:latest",
+      "instances": 3,
       "pull": true,
-      "Memory": 4000000000,
-      "MemorySwap": -1,
-      "CpuPercent": 100,
-      "Ulimits": [
-        {
-          "Name": "fsize",
-          "Hard": 2000000000,
-          "Soft": 2000000000
-        }
-      ],
+      "volumes": [
+        "android-sdk:/opt/android-sdk-linux"
+      ]
+    },
+    "android-ng-i-local-test": {
+      "image": "docker.bin.sbb.ch/schweizerischebundesbahnen/wzu-jenkins-slave-java:latest-dev",
+      "instances": 3,
       "env": [
-        "master=https://ci.sbb.ch/",
+        "master=https://mobile-i.ci.sbb.ch",
         "executors=1",
+        "ciuser=fsvctip",
+        "cipassword=sommer11",
         "slavename={{HOST_NAME}}-{{IP}}-{{CONTAINER_NAME}}",
         "externalport={{RANDOM_PORT}}",
         "host={{IP}}",
-        "labels=legacy {{IP}} {{PLATFORM}} {{PLATFORM}}",
-        "swarmopts=-disableClientsUniqueId -disableSslVerification"
+        "labels={{IP}} {{PLATFORM}}",
+        "swarmopts=-disableClientsUniqueId -disableSslVerification -tunnel=mobile-i-direct.wzu.io:50005"
+      ],
+      "pull": true,
+      "ExtraHosts": [
+        "code.sbb.ch:10.171.160.22",
+        "repo.sbb.ch:10.171.160.114",
+        "codequality.sbb.ch:10.171.160.80",
+        "svn.sbb.ch:10.171.160.18",
+        "ftp.sbb.ch:192.168.148.57",
+        "deploy.sbb.ch:192.168.148.57",
+        "master.ose.sbb-cloud.net:192.168.148.57",
+        "lb01a.ose.sbb-aws.net:192.168.148.57"
+      ],
+      "volumes": [
+        "android-sdk:/opt/android-sdk-linux"
       ]
     }
   },
   "removeIdleJenkinsSlaves": {
     "enabled": true,
-    "jenkinsMaster": "https://ci-i.sbb.ch",
+    "jenkinsMaster": "https://mobile-i.ci.sbb.ch",
     "username": "fsvctip",
     "password": "sommer11",
-    "checkInterval": 1,
-    "maxAge": 1
+    "checkInterval": 30,
+    "maxAge": 600
   },
   "removeCadavers": {
     "enabled": true,
-    "checkInterval": 10
+    "checkInterval": 30
   },
   "auth": {
     "serveraddress": "https://docker.bin.sbb.ch",
@@ -45,6 +57,6 @@
     "password": "APAWoMECbMfR7rbqAUztstKQqXu",
     "email": "mwe@sbb.ch"
   },
-  "logLevel": "debug",
+  "logLevel": "info",
   "cleanup": true
 }

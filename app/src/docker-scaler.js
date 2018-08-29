@@ -1,12 +1,15 @@
-'use strict';
-
 const
     crypto = require('crypto'),
     cleanup = require('./cleanup'),
     helper = require('./helper'),
-    hookException = require('./exceptions/hookException'),
+    fs = require('fs'),
+    path = require('path'),
+    Plugin = require('./plugin'),
+
+    hookException = require('./exceptions/hook-exception'),
     logger = helper.Logger.getInstance(),
-    docker = helper.Docker.getInstance();
+    docker = helper.Docker.getInstance(),
+    interval = [];
 
 class DockerScaler {
 
@@ -46,22 +49,34 @@ class DockerScaler {
         };
 
         this.config = Object.assign(this.defaultConfig, config);
-        this.plugins = {};
-        this.hooks = {
-            beforeCreate: [],
-            beforeCreateLate: []
-        };
+        this.plugins = [];
+
+        this._beforeCreateHook = [];
+        this._beforeCreateLateHook = [];
 
 
         logger.level = this.config.logLevel;
         logger.debug("%s: %s", this.pluginName, JSON.stringify(this.config));
-        cleanup.Cleanup(this.config);
+
+
+        cleanup.Cleanup(this, this.config);
     }
 
     /**
      * Initializes the scaler and starts all services the first time
      */
     init() {
+        const self = this;
+
+        const plugins = fs.readdirSync(path.resolve(__dirname, "plugins"));
+        for (const i in plugins) {
+            const PluginImpl = require("./plugins/" + plugins[i]);
+            if (PluginImpl.prototype instanceof Plugin) {
+                const plugin = new PluginImpl(this);
+                logger.info("Found new Plugin: %s", plugin.getName());
+                this.loadPlugin(plugin);
+            }
+        }
         for (const i in this.config.containers) {
             const
                 defaultConfig = JSON.parse(JSON.stringify(this.defaultContainersetConfig)), // copy the variables, otherwise they are referenced
@@ -81,10 +96,19 @@ class DockerScaler {
             containerset.image = containerset.image.replace(/^(docker.io\/)/, "");
 
             if (containerset.isDataContainer) {
-                this.spawnDataContainer(containerset);
+                self.spawnDataContainer(containerset);
             } else {
-                this.spawnWorkerContainer(containerset);
+                self.spawnWorkerContainer(containerset);
             }
+
+
+            interval.push(setInterval(function () {
+                if (containerset.isDataContainer) {
+                    self.spawnDataContainer(containerset);
+                } else {
+                    self.spawnWorkerContainer(containerset);
+                }
+            }, self.config.scaleInterval * 1000));
         }
     }
 
@@ -115,10 +139,7 @@ class DockerScaler {
 
         }
 
-        // restart process when finished
-        helper.Timer.add(function () {
-            self.spawnWorkerContainer(containerset);
-        }, self.config.scaleInterval * 1000);
+
     }
 
     /**
@@ -174,10 +195,6 @@ class DockerScaler {
             logger.error("%s: Couldn't count running containers: %s", self.pluginName, e);
         }
 
-        // restart process when finished
-        helper.Timer.add(function () {
-            self.spawnDataContainer(containerset);
-        }, self.config.scaleInterval * 1000);
     }
 
 
@@ -229,14 +246,9 @@ class DockerScaler {
             ExtraHosts: containerset.ExtraHosts
         };
 
-        // Workaround for old versions of scaler @TODO remove when not needed anymore
-        if (containerset.isDataContainer) {
-            containersetConfig.Labels['norestart'] = 'true';
-        }
-
         try {
-            await self.runHook('beforeCreate', containerset, containersetConfig);
-            await self.runHook('beforeCreateLate', containerset, containersetConfig);
+            await self.runHooks(containerset, containersetConfig);
+            await self.runLateHooks(containerset, containersetConfig);
         } catch (err) {
             if (err instanceof hookException) {
                 throw err.message;
@@ -249,7 +261,6 @@ class DockerScaler {
         } catch (err) {
             throw err;
         }
-
     }
 
     async startContainer(container) {
@@ -308,8 +319,6 @@ class DockerScaler {
         const self = this;
         try {
             let images = await docker.listImages({});
-            // Workaround for docker. They don't support filter by repotag.
-            //TODO: Use filter!!!
             for (const i in images) {
                 const image = images[i];
                 logger.debug("%s: found image: %s", self.pluginName, JSON.stringify(image));
@@ -441,15 +450,31 @@ class DockerScaler {
     }
 
     loadPlugin(plugin) {
-        logger.info("%s: Found %s plugin...", this.pluginName, plugin.pluginName);
-        this.plugins[plugin.pluginName] = new plugin(this);
+        logger.info("%s: Loading %s plugin...", this.pluginName, plugin.getName());
+        plugin.init();
+        this.plugins.push(plugin);
     }
 
-    async runHook(hook) {
-        const args = Array.prototype.slice.call(arguments);
+    unloadPlugin(plugin) {
+        logger.info("%s: Unloading %s plugin...", this.pluginName, plugin.getName());
+        try {
+            plugin.deinit();
+        } catch (e) {
+            logger.error("Deinitialization of Plugin %s failed", plugin.getName());
+        }
+    }
 
-        for (const i in this.hooks[hook]) {
-            await this.hooks[hook][i](this.config, args);
+    async runHooks(containerset, containersetConfig) {
+        for (const i in this._beforeCreateHook) {
+            const plugin = this._beforeCreateHook[i];
+            await plugin.beforeCreate(this.config, containerset, containersetConfig);
+        }
+    }
+
+    async runLateHooks(containerset, containersetConfig) {
+        for (const i in this._beforeCreateLateHook) {
+            const plugin = this._beforeCreateLateHook[i];
+            await plugin.beforeCreateLate(this.config, containerset, containersetConfig);
         }
     }
 
@@ -483,6 +508,18 @@ class DockerScaler {
     static generateId(len) {
         return crypto.randomBytes(len).toString('hex').substr(len);
     }
+
+
+    deinit() {
+        const self = this;
+        this.plugins.forEach(function (item) {
+            self.unloadPlugin(item)
+        });
+
+        interval.forEach(function (item) {
+            clearInterval(item);
+        });
+    }
 }
 
-exports.DockerScaler = DockerScaler;
+module.exports = DockerScaler;
