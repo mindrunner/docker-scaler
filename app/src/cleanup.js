@@ -1,8 +1,6 @@
 'use strict';
 
 const helper = require('./helper'),
-    fs = require('fs'),
-    path = require('path'),
     docker = helper.Docker.getInstance(),
     logger = helper.Logger.getInstance();
 
@@ -20,7 +18,7 @@ exports.Cleanup = function Cleanup(scaler, config) {
             logger.info("Stopping running containers...");
 
             for (const i in config.containers) {
-                const containerset = config.containers[i]
+                const containerset = config.containers[i];
 
                 logger.info("Stopping containers with id %s", containerset.id);
                 const listOpts = {

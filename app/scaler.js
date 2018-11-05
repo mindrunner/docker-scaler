@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-const fs = require('fs'),
-    DockerScaler = require('./src/docker-scaler');
+const fs = require('fs');
+const DockerScaler = require('./src/docker-scaler');
 
 if (!fs.existsSync('./config/config.json')) {
     throw new Error("config/config.json does not exist.");
