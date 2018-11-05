@@ -14,4 +14,4 @@ RUN chmod +x /opt/docker-autoscale/run.sh
 
 WORKDIR "/opt/docker-autoscale"
 
-CMD ["node", "--inspect", "/opt/docker-autoscale/scaler.js"]
+CMD ["node", "--inspect=0.0.0.0:9229", "/opt/docker-autoscale/scaler.js"]
