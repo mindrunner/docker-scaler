@@ -25,14 +25,15 @@
       ],
       "pull": true,
       "ExtraHosts": [
-        "code.sbb.ch:10.171.160.22",
-        "repo.sbb.ch:10.171.160.114",
-        "codequality.sbb.ch:10.171.160.80",
-        "svn.sbb.ch:10.171.160.18",
-        "ftp.sbb.ch:192.168.148.57",
-        "deploy.sbb.ch:192.168.148.57",
-        "master.ose.sbb-cloud.net:192.168.148.57",
-        "lb01a.ose.sbb-aws.net:192.168.148.57"
+        "code.sbb.ch:10.171.162.54",
+        "repo.sbb.ch:10.171.162.54",
+        "codequality.sbb.ch:10.171.162.54",
+        "svn.sbb.ch:10.171.162.54",
+        "ftp.sbb.ch:10.171.162.54",
+        "deploy.sbb.ch:10.171.162.54",
+        "master.ose.sbb-cloud.net:10.171.162.54",
+        "lb01a.ose.sbb-aws.net:10.171.162.54",
+        "bin.sbb.ch:10.171.162.54"
       ],
       "volumes": [
         "android-sdk:/opt/android-sdk-linux"
