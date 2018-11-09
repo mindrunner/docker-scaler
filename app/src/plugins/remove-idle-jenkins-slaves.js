@@ -171,9 +171,10 @@ for (Node node in jenkinsNodes)
             }
         });
         try {
-            return await getCrumbRequest(crumbUrl);
+            const response = await getCrumbRequest(crumbUrl);
+            return Promise.resolve(response);
         } catch (e) {
-            throw e
+            return Promise.reject(e)
         }
     };
 
@@ -185,9 +186,10 @@ for (Node node in jenkinsNodes)
         });
 
         try {
-            return await req(this._scriptUrl);
+            const response = await req(this._scriptUrl);
+            return Promise.resolve(response);
         } catch (e) {
-            throw e;
+            return Promise.reject(e)
         }
     };
 
@@ -198,9 +200,11 @@ for (Node node in jenkinsNodes)
             }
         });
         try {
-            return await req(this._scriptUrl);
+            const response = await req(this._scriptUrl);
+            return Promise.resolve(response);
         } catch (e) {
             this._logger.error("Cannot remove. %s", e);
+            return Promise.reject(e)
         }
     };
 
@@ -227,9 +231,9 @@ for (Node node in jenkinsNodes)
                     throw "Got error from server:\n" + body;
                 }
             }
-            return serverList;
+            return Promise.resolve(serverList);
         } catch (e) {
-            throw e;
+            return Promise.reject(e)
         }
 
 
@@ -259,9 +263,9 @@ for (Node node in jenkinsNodes)
                     throw "Got error from server:\n" + body;
                 }
             }
-            return serverList;
+            return Promise.resolve(serverList);
         } catch (e) {
-            throw e;
+            return Promise.reject(e)
         }
 
 
