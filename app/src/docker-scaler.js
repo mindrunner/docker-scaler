@@ -426,8 +426,8 @@ class DockerScaler {
         }
     }
 
-    async removeContainer(container) {
-        container = docker.getContainer(container.Id); //@TODO Check null
+    async removeContainer(id) {
+        let container = docker.getContainer(id); //@TODO Check null
         await container.remove({});
         return container;
     }
