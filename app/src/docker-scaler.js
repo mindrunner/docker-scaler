@@ -407,7 +407,7 @@ class DockerScaler {
     async stopContainer(id) {
         const container = docker.getContainer(id);
         try {
-            container.stop({});
+            await container.stop({});
         } catch (e) {
             if (e.statusCode !== 304) {
                 throw e;
@@ -418,7 +418,7 @@ class DockerScaler {
     async killContainer(id) {
         const container = docker.getContainer(id);
         try {
-            container.kill({});
+            await container.kill({});
         } catch (e) {
             if (e.statusCode !== 304) {
                 throw e;
