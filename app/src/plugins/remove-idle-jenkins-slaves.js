@@ -309,6 +309,20 @@ for (Node node in jenkinsNodes)
                         continue;
                     }
 
+
+                    let cankill = false;
+                    for (const c in this._scaler.config.containers) {
+                        if (container.Labels["group-id"] === c) {
+                            cankill = true;
+                        }
+                    }
+
+                    if(!cankill) {
+                        this._logger.debug("%s: Container %s does not belong to me. Won't kill.", this.getName(), container.Id, age);
+                        continue;
+                    }
+
+
                     this._logger.debug("%s: Idle container %s (%s) is running on removeIdleJenkinsSlaves host... Killing...", this.getName(), container.Id, idleNodeId);
                     const containerInfo = await this._scaler.inspectContainer(container.Id);
 
@@ -349,6 +363,20 @@ for (Node node in jenkinsNodes)
 
                     this._logger.debug("%s: Container %s (%s) is running on removeIdleJenkinsSlaves host... checking...", this.getName(), container.Id, nodeId);
                     const age = Math.floor(Date.now() / 1000) - container.Created;
+
+                    let cankill = false;
+                    for (const c in this._scaler.config.containers) {
+                        if (container.Labels["group-id"] === c) {
+                            cankill = true;
+                        }
+                    }
+
+                    if(!cankill) {
+                        this._logger.debug("%s: Container %s does not belong to me. Won't kill.", this.getName(), container.Id, age);
+                        continue;
+                    }
+
+
                     if (age < this._scaler.config.removeIdleJenkinsSlaves.maxAge) {
                         this._logger.debug("%s: Container %s (Age: %ds) is young enough. Won't kill.", this.getName(), container.Id, age);
                         continue;

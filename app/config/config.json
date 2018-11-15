@@ -10,7 +10,7 @@
       ]
     },
     "android-ng-i-local-test": {
-      "image": "docker.bin.sbb.ch/schweizerischebundesbahnen/wzu-jenkins-slave-java:latest-dev",
+      "image": "docker.bin.sbb.ch/wzu/jenkins-slave-java-light:latest-dev",
       "instances": 3,
       "env": [
         "master=https://mobile-i.ci.sbb.ch",
@@ -58,6 +58,6 @@
     "password": "APAWoMECbMfR7rbqAUztstKQqXu",
     "email": "mwe@sbb.ch"
   },
-  "logLevel": "info",
+  "logLevel": "debug",
   "cleanup": true
 }
