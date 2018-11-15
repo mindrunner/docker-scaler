@@ -351,8 +351,8 @@ for (Node node in jenkinsNodes)
                     const age = Math.floor(Date.now() / 1000) - container.Created;
 
                     let cankill = false;
-                    for (const container in this._scaler.config.containers) {
-                        if (container.Labels["group-id"] === container) {
+                    for (const c in this._scaler.config.containers) {
+                        if (container.Labels["group-id"] === c) {
                             cankill = true;
                         }
                     }
