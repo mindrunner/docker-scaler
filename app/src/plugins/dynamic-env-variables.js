@@ -1,7 +1,7 @@
 const Plugin = require('../plugin');
 const fs = require('fs'),
     os = require("os"),
-    request = require('request-promise-native'),
+    request = require('axios'),
     dns = require('dns'),
     dnsPromises = dns.promises;
 
@@ -29,8 +29,7 @@ class DynamicEnvVariablesPlugin extends Plugin {
         };
 
         const options = {
-            uri: 'http://169.254.169.254/latest/meta-data/local-ipv4',
-            resolveWithFullResponse: true,
+            url: 'http://169.254.169.254/latest/meta-data/local-ipv4',
             timeout: 1000
         };
 
@@ -55,9 +54,9 @@ class DynamicEnvVariablesPlugin extends Plugin {
 
         const checkIp = async () => {
             try {
-                let response = await request(options);
-                if (response.statusCode === 200) {
-                    return response.body;
+                let response = await request.get(options);
+                if (response.status === 200) {
+                    return response.data;
                 } else {
                     return await dnsLookup();
                 }
