@@ -1,9 +1,5 @@
 const Plugin = require('../plugin');
-const request = require('request-promise-native');
-
-// Use this to debug HTTP Requests
-// require('request-debug')(request);
-
+const request = require('axios');
 
 class RemoveIdleJenkinsSlavesPlugin extends Plugin {
 
@@ -25,12 +21,16 @@ class RemoveIdleJenkinsSlavesPlugin extends Plugin {
 
         this._scriptUrl = this._scaler.config.removeIdleJenkinsSlaves.jenkinsMaster + "/scriptText";
 
-        this._postRequest = request.defaults({
+        this._postRequest = request.create({
                 method: 'POST',
                 auth: {
-                    user: this._scaler.config.removeIdleJenkinsSlaves.username,
-                    pass: this._scaler.config.removeIdleJenkinsSlaves.password
-                }
+                    username: this._scaler.config.removeIdleJenkinsSlaves.username,
+                    password: this._scaler.config.removeIdleJenkinsSlaves.password
+                },
+                // proxy: {
+                //     host: '127.0.0.1',
+                //     port: 8888,
+                // },
             }
         );
 
@@ -47,11 +47,9 @@ class RemoveIdleJenkinsSlavesPlugin extends Plugin {
     async checkSlaves() {
         try {
             let c = await this.getCrumb();
-            let crumbField = c.split(":")[0];
-            let crumb = c.split(":")[1];
-            let headers = {};
-            headers[crumbField] = crumb;
-            this._postRequest = this._postRequest.defaults({headers});
+            let crumbField = c.data.split(":")[0];
+            let crumb = c.data.split(":")[1];
+            this._postRequest.defaults.headers[crumbField] = crumb;
         } catch (ex) {
             this._logger.warn("Jenkins does not support CSRF Header, consider activating the CSRF protection");
         }
@@ -73,14 +71,14 @@ def jenkinsNodes = jenkins.nodes
 for(Node node in jenkinsNodes)
 {
     if(node.nodeName.length() < 8) {
-        continue;
+        continue
     }
 
-    // When slave is offline and does nothing
-    if(node.getComputer().isOffline() && node.getComputer().countBusy() == 0)
-    {
+    if(node.getComputer().isOffline()) {
+     if(node.getComputer().countBusy() == 0) {
         def nodeId = node.nodeName[-8..-1]
         println nodeId
+     }
     }
 }`;
     };
@@ -97,7 +95,7 @@ def jenkinsNodes = jenkins.nodes
 for (Node node in jenkinsNodes)
 {
     if(node.nodeName.length() < 8) {
-        continue;
+        continue
     }
 
     def nodeId = node.nodeName[-8..-1]
@@ -117,16 +115,15 @@ def jenkinsNodes = jenkins.nodes
 for (Node node in jenkinsNodes) 
 {
     if(node.nodeName.length() < 8) {
-        continue;
+        continue
     }
     
-    // Make sure slave is online
     if (node.getComputer().isOffline()) 
     {        
         def nodeId = node.nodeName[-8..-1]
         
         if(nodeId == "${nodeId}") {
-            node.getComputer().doDoDelete();
+            node.getComputer().doDoDelete()
             println "true"
         }
     }
@@ -145,16 +142,15 @@ def jenkinsNodes = jenkins.nodes
 for (Node node in jenkinsNodes) 
 {
     if(node.nodeName.length() < 8) {
-        continue;
+        continue
     }
     
-    // Make sure slave is online
     if (!node.getComputer().isOffline()) 
     {        
         def nodeId = node.nodeName[-8..-1]
         
         if(nodeId == "${nodeId}") {
-            node.getComputer().setTemporarilyOffline(true, null);
+            node.getComputer().setTemporarilyOffline(true, null)
             println "true"
         }
     }
@@ -163,57 +159,53 @@ for (Node node in jenkinsNodes)
 
     async getCrumb() {
         const crumbUrl = this._scaler.config.removeIdleJenkinsSlaves.jenkinsMaster + `/crumbIssuer/api/xml?xpath=concat(//crumbRequestField,":",//crumb)`;
-        const getCrumbRequest = request.defaults({
-            method: 'GET',
-            auth: {
-                user: this._scaler.config.removeIdleJenkinsSlaves.username,
-                pass: this._scaler.config.removeIdleJenkinsSlaves.password
-            }
-        });
         try {
-            return await getCrumbRequest(crumbUrl);
+            let response = await request.get(crumbUrl,
+                {
+                    method: 'GET',
+                    auth: {
+                        username: this._scaler.config.removeIdleJenkinsSlaves.username,
+                        password: this._scaler.config.removeIdleJenkinsSlaves.password
+                    },
+                    // proxy: {
+                    //     host: '127.0.0.1',
+                    //     port: 8888,
+                    // },
+                }
+            );
+            return response;
         } catch (e) {
             throw e
         }
     };
 
     async setOldNodeOffline(nodeId) {
-        const req = this._postRequest.defaults({
-            form: {
-                script: this.setOldNodeOfflineJenkinsScript(nodeId)
-            }
-        });
-
         try {
-            return await req(this._scriptUrl);
+            return await this._postRequest(this._scriptUrl, {
+                data: "script=" + this.setOldNodeOfflineJenkinsScript(nodeId)
+            });
         } catch (e) {
             throw e;
         }
     };
 
     async removeIdleHostFromJenkins(nodeId) {
-        const req = this._postRequest.defaults({
-            form: {
-                script: this.removeIdleHostFromJenkinsScript(nodeId)
-            }
-        });
         try {
-            return await req(this._scriptUrl);
+            let response = await this._postRequest(this._scriptUrl, {
+                data: "script=" + this.removeIdleHostFromJenkinsScript(nodeId)
+            });
+            return response.data;
         } catch (e) {
             this._logger.error("Cannot remove. %s", e);
         }
     };
 
     async getNodes() {
-        const req = this._postRequest.defaults({
-            form: {
-                script: this.getAllNodesJenkinsScript()
-            }
-        });
-
         try {
-            let body = await req(this._scriptUrl);
-            const serverList = body.trim().split("\n");
+            let response = await this._postRequest(this._scriptUrl, {
+                data: "script=" + this.getAllNodesJenkinsScript()
+            });
+            const serverList = response.data.trim().split("\n");
             if (serverList.length === 0) {
                 throw "Didn't get any server from API";
             }
@@ -224,7 +216,7 @@ for (Node node in jenkinsNodes)
                     continue;
                 }
                 if (server.length !== 8) {
-                    throw "Got error from server:\n" + body;
+                    throw "Got error from server:\n" + response.data;
                 }
             }
             return serverList;
@@ -236,16 +228,11 @@ for (Node node in jenkinsNodes)
     };
 
     async getIdles() {
-        const idlesRequest = this._postRequest.defaults({
-            form: {
-                script: this.getIdleSlavesJenkinsScript()
-            }
-        });
-
-
         try {
-            let body = await idlesRequest(this._scriptUrl);
-            const serverList = body.trim().split("\n");
+            let response = await this._postRequest(this._scriptUrl, {
+                data: "script=" + this.getIdleSlavesJenkinsScript()
+            });
+            const serverList = response.data.trim().split("\n");
             if (serverList.length === 0) {
                 throw "Didn't get any server from API";
             }
@@ -256,15 +243,13 @@ for (Node node in jenkinsNodes)
                     continue;
                 }
                 if (server.length !== 8) {
-                    throw "Got error from server:\n" + body;
+                    throw "Got error from server:\n" + response.data;
                 }
             }
             return serverList;
         } catch (e) {
             throw e;
         }
-
-
     };
 
     async findContainer(id) {
@@ -274,7 +259,6 @@ for (Node node in jenkinsNodes)
                 label: ['auto-deployed']
             }
         };
-
 
         try {
             let containers = await this._docker.listContainers(listOpts);
@@ -317,7 +301,7 @@ for (Node node in jenkinsNodes)
                         }
                     }
 
-                    if(!cankill) {
+                    if (!cankill) {
                         this._logger.debug("%s: Container %s does not belong to me. Won't kill.", this.getName(), container.Id, age);
                         continue;
                     }
@@ -371,7 +355,7 @@ for (Node node in jenkinsNodes)
                         }
                     }
 
-                    if(!cankill) {
+                    if (!cankill) {
                         this._logger.debug("%s: Container %s does not belong to me. Won't kill.", this.getName(), container.Id, age);
                         continue;
                     }

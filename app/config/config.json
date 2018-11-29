@@ -3,8 +3,9 @@
   "containers": {
     "bash": {
       "image": "docker.bin.sbb.ch/bash:latest",
-      "instances": 3,
+      "instances": 1,
       "pull": true,
+      "isDataContainer": true,
       "volumes": [
         "android-sdk:/opt/android-sdk-linux"
       ]
@@ -13,7 +14,7 @@
       "image": "docker.bin.sbb.ch/wzu/jenkins-slave-java-light:latest-dev",
       "instances": 3,
       "env": [
-        "master=https://mobile-i.ci.sbb.ch",
+        "master=http://{{IP}}:60888",
         "executors=1",
         "ciuser=fsvctip",
         "cipassword=sommer11",
@@ -21,20 +22,11 @@
         "externalport={{RANDOM_PORT}}",
         "host={{IP}}",
         "labels={{IP}} {{PLATFORM}}",
-        "swarmopts=-disableClientsUniqueId -disableSslVerification -tunnel=mobile-i-direct.wzu.io:50005"
+        "http_proxy=",
+        "HTTP_PROXY=",
+        "swarmopts=-disableClientsUniqueId -disableSslVerification -tunnel={{IP}}:50000"
       ],
       "pull": true,
-      "ExtraHosts": [
-        "code.sbb.ch:10.171.162.54",
-        "repo.sbb.ch:10.171.162.54",
-        "codequality.sbb.ch:10.171.162.54",
-        "svn.sbb.ch:10.171.162.54",
-        "ftp.sbb.ch:10.171.162.54",
-        "deploy.sbb.ch:10.171.162.54",
-        "master.ose.sbb-cloud.net:10.171.162.54",
-        "lb01a.ose.sbb-aws.net:10.171.162.54",
-        "bin.sbb.ch:10.171.162.54"
-      ],
       "volumes": [
         "android-sdk:/opt/android-sdk-linux"
       ]
@@ -42,15 +34,15 @@
   },
   "removeIdleJenkinsSlaves": {
     "enabled": true,
-    "jenkinsMaster": "https://mobile-i.ci.sbb.ch",
+    "jenkinsMaster": "http://localhost:60888",
     "username": "fsvctip",
     "password": "sommer11",
-    "checkInterval": 30,
-    "maxAge": 600
+    "checkInterval": 10,
+    "maxAge": 60
   },
   "removeCadavers": {
     "enabled": true,
-    "checkInterval": 30
+    "checkInterval": 10
   },
   "auth": {
     "serveraddress": "https://docker.bin.sbb.ch",
