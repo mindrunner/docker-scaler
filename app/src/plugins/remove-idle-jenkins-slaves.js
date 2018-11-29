@@ -27,10 +27,10 @@ class RemoveIdleJenkinsSlavesPlugin extends Plugin {
                     username: this._scaler.config.removeIdleJenkinsSlaves.username,
                     password: this._scaler.config.removeIdleJenkinsSlaves.password
                 },
-                proxy: {
-                    host: '127.0.0.1',
-                    port: 8888,
-                },
+                // proxy: {
+                //     host: '127.0.0.1',
+                //     port: 8888,
+                // },
             }
         );
 
@@ -167,10 +167,10 @@ for (Node node in jenkinsNodes)
                         username: this._scaler.config.removeIdleJenkinsSlaves.username,
                         password: this._scaler.config.removeIdleJenkinsSlaves.password
                     },
-                    proxy: {
-                        host: '127.0.0.1',
-                        port: 8888,
-                    },
+                    // proxy: {
+                    //     host: '127.0.0.1',
+                    //     port: 8888,
+                    // },
                 }
             );
             return response;
