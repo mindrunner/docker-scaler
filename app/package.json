@@ -9,10 +9,8 @@
   "author": "Lukas Elsner <lukas.elsner@sbb.ch>",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.18.0",
     "dockerode": "^2.5.7",
-    "request": "^2.88.0",
-    "request-debug": "^0.2.0",
-    "request-promise-native": "^1.0.5",
     "winston": "~3.1.0"
   }
 }
