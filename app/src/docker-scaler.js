@@ -83,6 +83,7 @@ class DockerScaler {
                 containerset = this.config.containers[i] = Object.assign(defaultConfig, this.config.containers[i]); // merge default config with the containerset
 
             containerset.id = i; // object key of containerset is the same as the id.
+            //TODO: Remove This
             containerset.image = containerset.image.toLocaleLowerCase();
 
             // add latest tag if no tag is there
@@ -93,6 +94,7 @@ class DockerScaler {
             // make sure, the imagename does not contain the implicit docker.io registry host, so that we can later
             // search for both images (with and without host prefix) in getImageByRepoTag. This makes sure we support
             // old (1.10) and new (1.12) docker versions.
+            //TODO: Remove
             containerset.image = containerset.image.replace(/^(docker.io\/)/, "");
 
             if (containerset.isDataContainer) {
@@ -222,6 +224,7 @@ class DockerScaler {
     async createContainer(containerset) {
         const self = this;
 
+        //TODO: Non-redundant defaults
         const containersetConfig = {
             Image: containerset.image,
             name: containerset.name || containerset.id + "-" + DockerScaler.generateId(8),

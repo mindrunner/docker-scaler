@@ -25,7 +25,7 @@ class Plugin {
     }
 
     deinit() {
-        this._intervals.forEach(function(item) {
+        this._intervals.forEach(function (item) {
             clearInterval(item);
         });
     }
@@ -34,7 +34,7 @@ class Plugin {
 
     }
 
-   async beforeCreateLate(config, containerset, containersetConfig) {
+    async beforeCreateLate(config, containerset, containersetConfig) {
 
     }
 }
