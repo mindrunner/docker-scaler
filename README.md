@@ -28,6 +28,20 @@ vi /etc/wzu-docker/_scripts/init-compose/scaler-t-config/config/config.json
 sudo service scaler-t reinit
 ```
 
+## Development
+
+* Checkout in IntelliJ
+* nodejs-Plugin needed
+* needs to have a docker.sock available
+* start always with scaler.js as start, WorkingDir is app
+
+## Remote Debug
+
+* using auf inspect
+* random-port mappiog in docker.compose
+* ssh-tunnelling necessary: ssh -l32279:localhost:32778 ncsi@i90215.sbb.ch //32279 on localhost maps on 32279 on host
+* attach to node.sj : choose "switch", set break point and have fun
+
 ## Configuration
 
 The configuration has to be made in JSON and needs to be mounted to _/opt/docker-autoscale/config_ as _config.json_.
@@ -80,3 +94,27 @@ The configuration has to be made in JSON and needs to be mounted to _/opt/docker
     }
 }
 ```
+
+# Architecture
+
+The following section is based on the handover from Lukas, 4th december.
+Each scaler is able to handle multiple images. It is possible to run multiple scaler as long as the image-ids are disjunct.
+Examples are TSS where the multiple scalers are running on, all with the same configuration as on AWS.
+One scaler is only able to handle slaves for one master, not because of the spawning but because of the lookup if a job is currently running before switch off.
+
+## Entrypoint
+
+Entrypoint pro forma is scaler.js, which invokes the docker-scaler.js.
+
+### docker-scaler.js
+
+* Loading: First, it loads all plugins in the plugins-folder in the init-method. It stores the plugins in an array allowing clean decommissioning (deinit)
+* Starting Container afterwards
+* several utility method for interacting with docker from the plugins
+
+### plugin.js and implementing classes
+
+* plugin.js: Interface acting as as superclass for all plugins offering invocation of all plugins. All plugins muss inherit this class.
+* All implementing classes offer some disjunct functionality like e.g. deregistering slaves from the master, assigning random port, etc.
+* some plugins are used just as hooks (beforeCreate, beforeCreateLate in assign-random-port and dynamic-env-variables)
+* other plugins are continuously invoked. The timer is set in the init-method (for example in image-pull, remove-cadavers, remove-idle-jenkins-slaves)
