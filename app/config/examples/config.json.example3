@@ -1,0 +1,52 @@
+{
+  "scaleInterval": 1,
+  "containers": {
+    "android-ng-i-local-test": {
+      "image": "schweizerischebundesbahnen/wzu-jenkins-slave-java:latest-dev",
+      "instances": 3,
+      "env": [
+        "master=https://mobile-i.ci.sbb.ch",
+        "executors=1",
+        "ciuser=fsvctip",
+        "cipassword=sommer11",
+        "slavename={{HOST_NAME}}-{{IP}}-{{CONTAINER_NAME}}",
+        "externalport={{RANDOM_PORT}}",
+        "host={{IP}}",
+        "labels={{IP}} {{PLATFORM}}",
+        "swarmopts=-disableClientsUniqueId -disableSslVerification -tunnel=mobile-i-direct.wzu.io:50005"
+      ],
+      "pull": true,
+      "ExtraHosts": [
+        "code.sbb.ch:10.171.162.54",
+        "repo.sbb.ch:10.171.162.54",
+        "codequality.sbb.ch:10.171.162.54",
+        "svn.sbb.ch:10.171.162.54",
+        "ftp.sbb.ch:10.171.162.54",
+        "deploy.sbb.ch:10.171.162.54",
+        "master.ose.sbb-cloud.net:10.171.162.54",
+        "lb01a.ose.sbb-aws.net:10.171.162.54",
+        "bin.sbb.ch:10.171.162.54"
+      ]
+    }
+  },
+  "removeIdleJenkinsSlaves": {
+    "enabled": true,
+    "jenkinsMaster": "https://mobile-i.ci.sbb.ch",
+    "username": "user",
+    "password": "pass",
+    "checkInterval": 1,
+    "maxAge": 1
+  },
+  "removeCadavers": {
+    "enabled": true,
+    "checkInterval": 1
+  },
+  "auth": {
+    "serveraddress": "https://docker.bin.sbb.ch",
+    "username": "scaler",
+    "password": "pass",
+    "email": "user"
+  },
+  "logLevel": "debug",
+  "cleanup": true
+}
