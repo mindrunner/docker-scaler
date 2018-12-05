@@ -37,17 +37,22 @@ exports.Logger = (function () {
 
 exports.Docker = (function () {
     let instance;
-
     function createDocker() {
-        const socket = process.env.DOCKER_SOCKET || '/var/run/docker.sock';
-        if (!fs.existsSync(socket)) {
-            throw new Error("You have to connect the docker socket (e.g. -v /var/run/docker.sock:/var/run/docker.sock).");
+        if(!process.env.DOCKERHOST) {
+            const socket = process.env.DOCKER_SOCKET || '/var/run/docker.sock';
+            if (!fs.existsSync(socket)) {
+                throw new Error("You have to connect the docker socket (e.g. -v /var/run/docker.sock:/var/run/docker.sock).");
+            }
+            const stats = fs.statSync(socket);
+            if (!stats.isSocket()) {
+                throw new Error('Are you sure docker is running?');
+            }
+            return new Docker({socketPath: socket});
+        }else
+        {
+            console.log("Connecting to TCP Dockerdaemon at: "+process.env.DOCKERHOST+":"+process.env.DOCKERPORT);
+            return new Docker({host: process.env.DOCKERHOST, port: process.env.DOCKERPORT})
         }
-        const stats = fs.statSync(socket);
-        if (!stats.isSocket()) {
-            throw new Error('Are you sure docker is running?');
-        }
-        return new Docker({socketPath: socket});
     }
 
     return {
