@@ -28,11 +28,6 @@ class DynamicEnvVariablesPlugin extends Plugin {
             "{{HTTPS_PROXY}}": dockerInfo.HttpsProxy,
         };
 
-        const options = {
-            url: 'http://169.254.169.254/latest/meta-data/local-ipv4',
-            timeout: 1000
-        };
-
         const dnsLookup = async () => {
             let name = "";
             if (fs.existsSync('/.dockerenv')) {
@@ -54,7 +49,7 @@ class DynamicEnvVariablesPlugin extends Plugin {
 
         const checkIp = async () => {
             try {
-                let response = await request.get(options);
+                let response = await request.get('http://169.254.169.254/latest/meta-data/local-ipv4');
                 if (response.status === 200) {
                     return response.data;
                 } else {
