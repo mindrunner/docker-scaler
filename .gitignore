@@ -1,7 +1,4 @@
 app/node_modules/
 .idea/
-config/**
-app/config/**
-!config/config.dist.json
-!app/config/config.dist.json
+app/config/config.json
 

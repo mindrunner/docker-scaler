@@ -1,0 +1,50 @@
+{
+  "scaleInterval": 10,
+  "pullInterval": 60,
+  "containers": {
+    "http1": {
+      "image": "docker.io/httpd:latest",
+      "instances": 1,
+      "pull": true,
+      "Memory": 4000000000,
+      "MemorySwap": -1,
+      "CpuPercent": 100,
+      "Ulimits": [
+        {
+          "Name": "fsize",
+          "Hard": 2000000000,
+          "Soft": 2000000000
+        }
+      ],
+      "env": [
+        "master=https://ci.sbb.ch/",
+        "executors=1",
+        "slavename={{HOST_NAME}}-{{IP}}-{{CONTAINER_NAME}}",
+        "externalport={{RANDOM_PORT}}",
+        "host={{IP}}",
+        "labels=legacy {{IP}} {{PLATFORM}} {{PLATFORM}}",
+        "swarmopts=-disableClientsUniqueId -disableSslVerification"
+      ]
+    }
+  },
+  "removeIdleJenkinsSlaves": {
+    "enabled": true,
+    "jenkinsMaster": "https://ci-i.sbb.ch",
+    "username": "user",
+    "password": "pass",
+    "checkInterval": 1,
+    "maxAge": 1
+  },
+  "removeCadavers": {
+    "enabled": true,
+    "checkInterval": 10
+  },
+  "auth": {
+    "serveraddress": "https://docker.bin.sbb.ch",
+    "username": "scaler",
+    "password": "pass",
+    "email": "user"
+  },
+  "logLevel": "debug",
+  "cleanup": true
+}

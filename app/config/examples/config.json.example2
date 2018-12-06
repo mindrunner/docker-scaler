@@ -1,0 +1,30 @@
+{
+  "scaleInterval": 3,
+  "containers": {
+    "http1": {
+      "image": "httpd:latest",
+      "instances": 1,
+      "pull": true
+    }
+  },
+  "removeIdleJenkinsSlaves": {
+    "enabled": false,
+    "jenkinsMaster": "https://ci-t.sbb.ch",
+    "username": "user",
+    "password": "pass",
+    "checkInterval": 1,
+    "maxAge": 1
+  },
+  "removeCadavers": {
+    "enabled": true,
+    "checkInterval": 1
+  },
+  "auth": {
+    "serveraddress": "https://docker.bin.sbb.ch",
+    "username": "scaler",
+    "password": "pass",
+    "email": "user"
+  },
+  "logLevel": "debug",
+  "cleanup": true
+}
