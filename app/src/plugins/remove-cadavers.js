@@ -118,7 +118,7 @@ class RemoveCadaversPlugin extends Plugin {
         }
 
         try {
-            let containers = await this._scaler.getAllRunningContainers();
+            let containers = await this.getAllRunningContainers();
             const result = [];
             for (let i in containers) {
                 const container = containers[i];
@@ -182,7 +182,7 @@ class RemoveCadaversPlugin extends Plugin {
                     const mount = container.Mounts[j];
                     try {
                         this._logger.debug("%s: Removing volume %s.", this.getName(), mount.Name);
-                        await this._scaler.removeVolume(mount.Name);
+                        await this.removeVolume(mount.Name);
                         this._logger.debug("%s: Removed volume %s.", this.getName(), mount.Name);
                     } catch (err) {
                         this._logger.error("%s: Couldn't remove volume %s. Error: %s", this.getName(), mount.Name, err);
@@ -197,7 +197,7 @@ class RemoveCadaversPlugin extends Plugin {
                 const image = danglingImages[i];
                 try {
                     this._logger.debug("%s: Removing dangling image %s.", this.getName(), image.Id);
-                    await this._scaler.removeImage(image.Id);
+                    await this.removeImage(image.Id);
                     this._logger.debug("%s: Removed dangling image %s.", this.getName(), image.Id);
                 } catch (err) {
                     this._logger.error("%s: Couldn't remove dangling image %s. Error: %s", this.getName(), image.Id, err);
@@ -212,7 +212,7 @@ class RemoveCadaversPlugin extends Plugin {
                 const volume = danglingVolumes[i];
                 try {
                     this._logger.debug("%s: Removing dangling volume %s.", this.getName(), volume.Name);
-                    await this._scaler.removeVolume(volume.Name);
+                    await this.removeVolume(volume.Name);
                     this._logger.debug("%s: Removed dangling volume %s.", this.getName(), volume.Name);
                 } catch (err) {
                     this._logger.error("%s: Couldn't remove dangling volume %s. Error: %s", this.getName(), volume.Name, err);

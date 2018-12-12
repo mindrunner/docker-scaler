@@ -132,35 +132,6 @@ class DockerScaler {
         }
     }
 
-    async getDataContainers() {
-        const listOpts = {
-            all: true,
-            filters: {
-                label: [
-                    'auto-deployed=true',
-                    'data-container=true'
-                ]
-            }
-        };
-
-        try {
-            return await docker.listContainers(listOpts);
-        } catch (e) {
-            throw e;
-        }
-    }
-
-    async stopContainer(id) {
-        const container = docker.getContainer(id);
-        try {
-            await container.stop({});
-        } catch (e) {
-            if (e.statusCode !== 304) {
-                throw e;
-            }
-        }
-    }
-
     async removeContainer(id) {
         let container = docker.getContainer(id); //@TODO Check null
         await container.remove({});
