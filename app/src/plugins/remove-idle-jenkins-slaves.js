@@ -308,7 +308,7 @@ for (Node node in jenkinsNodes)
 
 
                     this._logger.debug("%s: Idle container %s (%s) is running on removeIdleJenkinsSlaves host... Killing...", this.getName(), container.Id, idleNodeId);
-                    const containerInfo = await this._scaler.inspectContainer(container.Id);
+                    const containerInfo = await this.inspectContainer(container.Id);
 
                     try {
                         await this.removeIdleHostFromJenkins(idleNodeId);
