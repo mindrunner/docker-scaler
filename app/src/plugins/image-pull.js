@@ -9,17 +9,15 @@ class ImagePullPlugin extends Plugin {
      */
     constructor(scaler) {
         super("ImagePullPlugin", scaler);
-
     }
 
     init() {
         super.init();
         const self = this;
-
         for (const i in this._scaler.config.containers) {
-            const containerset = this._scaler.config.containers[i];
+            const containerset = self._scaler.config.containers[i];
             if (containerset.pull) {
-                //self.pullContainerset(containerset);
+                self.pullContainerset(containerset);
                 this._intervals.push(setInterval(function () {
                     self.pullContainerset(containerset);
                 }, self._scaler.config.pullInterval * 1000));
@@ -35,7 +33,6 @@ class ImagePullPlugin extends Plugin {
      * @param containerset
      */
     async pullContainerset(containerset) {
-
         try {
             await this.pullImage(containerset.image);
             this._logger.info("%s: Successfully pulled %s.", this.getName(), containerset.image);

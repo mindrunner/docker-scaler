@@ -3,10 +3,10 @@ const
     crypto = require('crypto'),
     hookException = require('../exceptions/hook-exception');
 
-class HandleContainer extends Plugin {
+class HandleContainers extends Plugin {
 
     constructor(scaler) {
-        super("HandelContainer", scaler);
+        super("HandelContainers", scaler);
     }
     init() {
         const self = this;
@@ -38,7 +38,7 @@ class HandleContainer extends Plugin {
         //TODO: Non-redundant defaults
         const containersetConfig = {
             Image: containerset.image,
-            name: containerset.name || containerset.id + "-" + HandleContainer.generateId(8),
+            name: containerset.name || containerset.id + "-" + HandleContainers.generateId(8),
             Labels: {
                 'auto-deployed': 'true',
                 'source-image': containerset.image,
@@ -276,4 +276,4 @@ class HandleContainer extends Plugin {
 
 }
 
-module.exports = HandleContainer;
+module.exports = HandleContainers;
