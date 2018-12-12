@@ -1,6 +1,7 @@
 'use strict';
 
-const fs = require('fs'),
+const
+    fs = require('fs'),
     Docker = require('dockerode'),
     winston = require('winston');
 
@@ -51,7 +52,7 @@ exports.Docker = (function () {
         }else
         {
             console.log("Connecting to TCP Dockerdaemon at: "+process.env.DOCKERHOST+":"+process.env.DOCKERPORT);
-            return new Docker({host: process.env.DOCKERHOST, port: process.env.DOCKERPORT})
+            return new Docker({ host: process.env.DOCKERHOST, port: process.env.DOCKERPORT  })
         }
     }
 
@@ -66,7 +67,8 @@ exports.Docker = (function () {
 })();
 
 exports.removeContainer = function (containerId) {
-    const docker = exports.Docker.getInstance(),
+    const
+        docker = exports.Docker.getInstance(),
         logger = exports.Logger.getInstance(),
         container = docker.getContainer(containerId);
 

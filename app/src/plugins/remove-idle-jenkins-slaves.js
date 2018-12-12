@@ -316,7 +316,7 @@ for (Node node in jenkinsNodes)
                         this._logger.error("%s: Container %s not registered in Jenkins", this.getName(), container.Id)
                     }
                     if (containerInfo.State.Running) {
-                        await this._scaler.killContainer(container.Id);
+                        await this.killContainer(container.Id);
                     }
                     await this._scaler.removeContainer(container.Id);
                     this._logger.debug("%s: Removed idle container %s.", this.getName(), container.Id)
@@ -328,6 +328,17 @@ for (Node node in jenkinsNodes)
             this._logger.error("%s: %s", this.getName(), err);
         }
     };
+
+    async killContainer(id) {
+        const container = this._docker.getContainer(id);
+        try {
+            await container.kill({});
+        } catch (e) {
+            if (e.statusCode !== 304) {
+                throw e;
+            }
+        }
+    }
 
     async checkAge() {
         this._logger.debug("%s: Checking slaves states...", this.getName());
@@ -375,7 +386,13 @@ for (Node node in jenkinsNodes)
         } catch (err) {
             this._logger.error("%s: %s", this.getName(), err);
         }
-    };
+    }
+
+    async inspectContainer(id) {
+        const container = this._docker.getContainer(id);
+        return await container.inspect({});
+    }
+
 }
 
 

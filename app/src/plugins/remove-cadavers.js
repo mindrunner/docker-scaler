@@ -1,10 +1,13 @@
-const Plugin = require('../plugin');
-const util = require('util');
+const
+    Plugin = require('../plugin'),
+    helper = require('../helper'),
+    util = require('util');
 
 class RemoveCadaversPlugin extends Plugin {
 
     constructor(scaler) {
         super("RemoveCadaversPlugin", scaler);
+
         this._defaultConfig = {
             enabled: false,
             checkInterval: 30,
@@ -217,6 +220,31 @@ class RemoveCadaversPlugin extends Plugin {
             }
         }
     };
+
+
+
+    async getAllRunningContainers() {
+        const listOpts = {
+            filters: {
+                status: ['running'],
+                label: ['auto-deployed=true']
+            }
+        };
+        return await this._docker.listContainers(listOpts);
+    }
+
+    async removeVolume(name) {
+        const volume = this._docker.getVolume(name);
+        await volume.remove({});
+        return name;
+    }
+
+    async removeImage(name) {
+        const image = this._docker.getImage(name);
+        await image.remove({});
+        return name;
+    }
+
 }
 
 module.exports = RemoveCadaversPlugin;

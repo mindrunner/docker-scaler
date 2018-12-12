@@ -1,5 +1,6 @@
-const Plugin = require('../plugin');
-const fs = require('fs'),
+const
+    Plugin = require('../plugin'),
+    fs = require('fs'),
     os = require("os"),
     request = require('axios'),
     dns = require('dns'),
@@ -19,7 +20,7 @@ class DynamicEnvVariablesPlugin extends Plugin {
     }
 
     async getDynamicVariables() {
-        let dockerInfo = await this._scaler.getDockerInfo();
+        let dockerInfo = await this._docker.info();
 
         const dynamicVariables = {
             "{{SERVER_VERSION}}": dockerInfo.ServerVersion,
@@ -63,10 +64,10 @@ class DynamicEnvVariablesPlugin extends Plugin {
         let hostname = "localhost";
 
         if (fs.existsSync('/.dockerenv')) {
-            this._logger.debug("Found docker environment, Hostname: %s", dockerInfo.Name);
+            this._logger.debug("%s: Found docker environment, Hostname: %s", this.getName(), dockerInfo.Name);
             hostname = dockerInfo.Name;
         } else {
-            this._logger.debug("Found non-docker environment, Hostname: %s", os.hostname());
+            this._logger.debug("%s: Found non-docker environment, Hostname: %s", this.getName(), os.hostname());
             hostname = os.hostname();
         }
 
@@ -123,6 +124,7 @@ class DynamicEnvVariablesPlugin extends Plugin {
             }
         }
     }
+
 }
 
 module.exports = DynamicEnvVariablesPlugin;
