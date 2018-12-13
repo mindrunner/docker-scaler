@@ -219,6 +219,7 @@ class DockerScaler {
             logger.error("%s: Couldn't start %s. Will try in next cycle. Error: %s", self.pluginName, containerset.image, err);
             throw err;
         }
+        logger.info('%s: Started instance of %s.', this.pluginName, containerset.image);
     }
 
     async createContainer(containerset) {
