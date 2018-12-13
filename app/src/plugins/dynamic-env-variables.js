@@ -50,7 +50,10 @@ class DynamicEnvVariablesPlugin extends Plugin {
 
         const checkIp = async () => {
             try {
-                let response = await request.get('http://169.254.169.254/latest/meta-data/local-ipv4');
+                // We need Timeout so we dont take minutes to create containers
+                let response = await request.get('http://169.254.169.254/latest/meta-data/local-ipv4',{
+                    timeout: 500
+                });
                 if (response.status === 200) {
                     return response.data;
                 } else {
