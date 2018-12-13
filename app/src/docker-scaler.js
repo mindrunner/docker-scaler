@@ -123,13 +123,13 @@ class DockerScaler {
         const self = this;
         try {
             let runningContainers = await this.getContainerByGroupId(containerset.id);
+            logger.debug("%s: Found %d running containers of %s", self.pluginName, runningContainers.length, containerset.id);
             if (runningContainers.length < containerset.instances) {
                 const neededContainers = containerset.instances - runningContainers.length;
+                logger.debug("%s: %d containers needed, thus spawning %d", self.pluginName, containerset.instances, neededContainers);
 
                 for (let i = 0; i < neededContainers; i++) {
                     try {
-                        // we need to wait until the container is running,
-                        // to avoid starting to much containers
                         await self.runContainer(containerset);
                     } catch (err) {
                         logger.error("%s: %s", self.pluginName, err);
