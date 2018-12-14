@@ -12,14 +12,13 @@ class DockerScaler {
 
     constructor(config) {
         this.pluginName = "scaler";
+
         this.defaultConfig = {
             maxAge: 0, // Max age in seconds after a container should get killed, set 0 to disable
-            scaleInterval: 10, // Interval in seconds, to check if enough instances are running
             pullInterval: 1800, // Interval between pulls in seconds.
             ageCheckInterval: 30, // Interval in seconds to check if the age of the running instances
             slowKill: 1, // Amount of containers that get killed at once, if they are to old. Set 0 to disable.
             slowKillWait: 10, // Time in seconds to wait after slowKill, limit was reached. (should be shorter than ageCheckInterval)
-            containers: {},
             logLevel: 'info',
             minPort: 40000, //settings for random ports
             maxPort: 50000,
@@ -63,12 +62,13 @@ class DockerScaler {
      */
     init() {
         const self = this;
+        const handelContainers = this.config.handleContainers;
 
         //Read config file and update required infromations
-        for (const i in this.config.containers) {
+        for (const i in handelContainers.containers) {
             const
                 defaultConfig = JSON.parse(JSON.stringify(this.defaultContainersetConfig)), // copy the variables, otherwise they are referenced
-                containerset = this.config.containers[i] = Object.assign(defaultConfig, this.config.containers[i]); // merge default config with the containerset
+                containerset = handelContainers.containers[i] = Object.assign(defaultConfig, handelContainers.containers[i]); // merge default config with the containerset
 
             containerset.id = i; // object key of containerset is the same as the id.
             //TODO: Remove This - Is there any specific ground to remove the line which make the image name in lowercase?

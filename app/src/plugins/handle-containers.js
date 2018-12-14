@@ -6,16 +6,17 @@ const
 class HandleContainers extends Plugin {
 
     constructor(scaler) {
-        super("HandelContainers", scaler);
+        super("HandleContainers", scaler);
     }
     init() {
         const self = this;
+        const handleContainers = this._scaler.config.handleContainers;
         super.init();
         this._logger.info("%s: Updating data readed from config file.", this.getName());
 
-        for (const i in this._scaler.config.containers) {
+        for (const i in handleContainers.containers) {
             const
-                containerset = this._scaler.config.containers[i]; // = Object.assign(defaultConfig, this.config.containers[i]); // merge default config with the containerset
+                containerset = handleContainers.containers[i]; // = Object.assign(defaultConfig, this.config.containers[i]); // merge default config with the containerset
 
             if (containerset.isDataContainer) {
                 this.spawnDataContainer(containerset);
@@ -29,7 +30,7 @@ class HandleContainers extends Plugin {
                 } else {
                     self.spawnWorkerContainer(containerset);
                 }
-            }, self._scaler.config.scaleInterval * 1000));
+            }, handleContainers.checkInterval * 1000));
         }
     }
 
@@ -262,7 +263,6 @@ class HandleContainers extends Plugin {
             throw e;
         }
     }
-
 
     async startContainer(container) {
         try {

@@ -15,10 +15,11 @@ exports.Cleanup = function Cleanup(scaler, config) {
         logger.info('%s: Waiting all processes to finish...', "cleanup");
 
         if ((process.env.CLEANUP && process.env.CLEANUP === "true") || config.cleanup === true) {
-            logger.info("Stopping running containers...");
+            const handleContainers =  config.handleContainers;
+            logger.info("Stopping running containers...", );
 
-            for (const i in config.containers) {
-                const containerset = config.containers[i];
+            for (const i in handleContainers.containers) {
+                const containerset = handleContainers.containers[i];
 
                 logger.info("Stopping containers with id %s", containerset.id);
                 const listOpts = {
