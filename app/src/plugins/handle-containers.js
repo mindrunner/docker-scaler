@@ -9,28 +9,24 @@ class HandleContainers extends Plugin {
         super("HandleContainers", scaler);
     }
     init() {
+        super.init();
         const self = this;
         const handleContainers = this._scaler.config.handleContainers;
-        super.init();
         this._logger.info("%s: Updating data readed from config file.", this.getName());
 
         for (const i in handleContainers.containers) {
-            const
-                containerset = handleContainers.containers[i]; // = Object.assign(defaultConfig, this.config.containers[i]); // merge default config with the containerset
+            const containerset = handleContainers.containers[i]; // = Object.assign(defaultConfig, this.config.containers[i]); // merge default config with the containerset
 
-            if (containerset.isDataContainer) {
-                this.spawnDataContainer(containerset);
-            } else {
-                this.spawnWorkerContainer(containerset);
-            }
+            this.timerCheckContainer(containerset);
+            this._intervals.push(setInterval(function(){self.timerCheckContainer(containerset)}, handleContainers.checkInterval * 1000));
+        }
+    }
 
-            this._intervals.push(setInterval(function () {
-                if (containerset.isDataContainer) {
-                    self.spawnDataContainer(containerset);
-                } else {
-                    self.spawnWorkerContainer(containerset);
-                }
-            }, handleContainers.checkInterval * 1000));
+    timerCheckContainer(containerset) {
+        if (containerset.isDataContainer) {
+            this.spawnDataContainer(containerset);
+        } else {
+            this.spawnWorkerContainer(containerset);
         }
     }
 
