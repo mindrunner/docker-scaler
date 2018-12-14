@@ -14,8 +14,9 @@ class ImagePullPlugin extends Plugin {
     init() {
         super.init();
         const self = this;
-        for (const i in this._scaler.config.containers) {
-            const containerset = self._scaler.config.containers[i];
+        const handleContainers = this._scaler.config.handleContainers;
+        for (const i in handleContainers.containers) {
+            const containerset = handleContainers.containers[i];
             if (containerset.pull) {
                 self.pullContainerset(containerset);
                 this._intervals.push(setInterval(function () {
