@@ -232,7 +232,7 @@ for (Node node in jenkinsNodes)
             let response = await this._postRequest(this._scriptUrl, {
                 data: "script=" + this.getIdleSlavesJenkinsScript()
             });
-            const serverList = response.data.trim().split("\n");
+            const serverList = trim(response.data).split("\n");
             if (serverList.length === 0) {
                 throw "Didn't get any server from API";
             }
