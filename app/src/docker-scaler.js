@@ -132,12 +132,6 @@ class DockerScaler {
         }
     }
 
-    async removeContainer(id) {
-        let container = docker.getContainer(id); //@TODO Check null
-        await container.remove({});
-        return container;
-    }
-
     loadPlugin(plugin) {
         logger.info("%s: Loading %s plugin...", this.pluginName, plugin.getName());
         plugin.init();
@@ -151,28 +145,6 @@ class DockerScaler {
         } catch (e) {
             logger.error("Deinitialization of Plugin %s failed", plugin.getName());
         }
-    }
-
-    /**
-     * Special trim function that allows you to trim a string,
-     * that it only has numbers and chars at the beginning and end.
-     *
-     * @param str String to trim
-     * @returns {*} Trimmed string
-     */
-    static trim(str) {
-        const regex = /[a-zA-Z0-9]/;
-
-        while (!regex.test(str.charAt(0))) {
-            str = str.slice(1);
-
-        }
-
-        while (!regex.test(str.charAt(str.length - 1))) {
-            str = str.slice(0, -1);
-        }
-
-        return str;
     }
 
     deinit() {
