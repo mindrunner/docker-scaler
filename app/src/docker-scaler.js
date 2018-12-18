@@ -25,24 +25,7 @@ class DockerScaler {
             ExtraHosts: []
         };
 
-        this.defaultContainersetConfig = {
-            pull: true,
-            image: null,
-            instances: 0,
-            volumes: [],
-            env: [],
-            ports: [],
-            restart: true,
-            volumesFrom: [],
-            isDataContainer: false,
-            Memory: 0,
-            Ulimits: null,
-            MemorySwap: 0,
-            NetworkMode: "bridge",
-            CpuPercent: 80,
-            ExtraHosts: []
-        };
-
+        //Read config file and merge default config with it
         this.config = Object.assign(this.defaultConfig, config);
         this.plugins = [];
 
@@ -61,35 +44,6 @@ class DockerScaler {
      */
     init() {
         const self = this;
-
-
-        // Todo: Start Move this to handle-containers
-        const handelContainers = this.config.handleContainers;
-
-        //Read config file and update required infromations
-        logger.info("%s: Updating data read from config file.", this._name);
-        for (const i in handelContainers.containers) {
-            const
-                defaultConfig = JSON.parse(JSON.stringify(this.defaultContainersetConfig)), // copy the variables, otherwise they are referenced
-                containerset = handelContainers.containers[i] = Object.assign(defaultConfig, handelContainers.containers[i]); // merge default config with the containerset
-
-            containerset.id = i; // object key of containerset is the same as the id.
-            //Im Artifactory database from what I have seen the cass is insensitive and it gives more freedom in the config file and avoid potential errors.
-            // Todo: Remove in phase 2
-            containerset.image = containerset.image.toLocaleLowerCase();
-
-            // add latest tag if no tag is there
-            if (containerset.image.split(':').length < 2) {
-                containerset.image += ":latest";
-            }
-
-            // make sure, the imagename does not contain the implicit docker.io registry host, so that we can later
-            // search for both images (with and without host prefix) in getImageByRepoTag. This makes sure we support
-            // old (1.10) and new (1.12) docker versions.
-            // I suggest to keep the next line unless there is a good reason to remove it.
-            containerset.image = containerset.image.replace(/^(docker.io\/)/, "");
-        }
-        // Todo: END Move this to handle-containers
 
         //Load plugins
         const plugins = fs.readdirSync(path.resolve(__dirname, "plugins"));
