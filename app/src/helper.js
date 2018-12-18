@@ -3,7 +3,8 @@
 const
     fs = require('fs'),
     Docker = require('dockerode'),
-    winston = require('winston');
+    winston = require('winston'),
+    _name = "helper";
 
 exports.Logger = (function () {
     let instance;
@@ -74,16 +75,16 @@ exports.removeContainer = function (containerId) {
 
     container.stop(function (err, data) {
         if (err) {
-            logger.error("%s: Error stopping %s. Maybe it's not running.", "helper", containerId);
+            logger.error("%s: Error stopping %s. Maybe it's not running.", _name, containerId);
         } else {
-            logger.info("%s: Stopped container %s.", "helper", containerId);
+            logger.info("%s: Stopped container %s.", _name, containerId);
         }
 
         container.remove(function (err, data) {
             if (err) {
-                logger.error("%s: Error removing %s.", "helper", containerId);
+                logger.error("%s: Error removing %s.", _name, containerId);
             }
-            logger.info("%s: Removed container %s.", "helper", containerId);
+            logger.info("%s: Removed container %s.", _name, containerId);
         });
     });
 };

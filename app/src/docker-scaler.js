@@ -64,6 +64,7 @@ class DockerScaler {
         const handelContainers = this.config.handleContainers;
 
         //Read config file and update required infromations
+        logger.info("%s: Updating data read from config file.", this._name);
         for (const i in handelContainers.containers) {
             const
                 defaultConfig = JSON.parse(JSON.stringify(this.defaultContainersetConfig)), // copy the variables, otherwise they are referenced

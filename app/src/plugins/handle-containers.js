@@ -12,7 +12,6 @@ class HandleContainers extends Plugin {
         super.init();
         const self = this;
         const handleContainers = this._scaler.config.handleContainers;
-        this._logger.info("%s: Updating data readed from config file.", this.getName());
 
         for (const i in handleContainers.containers) {
             const containerset = handleContainers.containers[i]; // = Object.assign(defaultConfig, this.config.containers[i]); // merge default config with the containerset
