@@ -70,8 +70,7 @@ class DockerScaler {
                 containerset = handelContainers.containers[i] = Object.assign(defaultConfig, handelContainers.containers[i]); // merge default config with the containerset
 
             containerset.id = i; // object key of containerset is the same as the id.
-            //TODO: Remove This - Is there any specific ground to remove the line which make the image name in lowercase?
-            //Im Artifactory database from what I have seen the cass is insensitive and it gives mor  Es gibt more freedom at user level to recude errors when a capital letter is entered by mistakes.
+            //Im Artifactory database from what I have seen the cass is insensitive and it gives more freedom in the config file and avoid potential errors.
             containerset.image = containerset.image.toLocaleLowerCase();
 
             // add latest tag if no tag is there
@@ -82,7 +81,7 @@ class DockerScaler {
             // make sure, the imagename does not contain the implicit docker.io registry host, so that we can later
             // search for both images (with and without host prefix) in getImageByRepoTag. This makes sure we support
             // old (1.10) and new (1.12) docker versions.
-            //TODO: Remove
+            // I suggest to keep the next line unless there is a good reason to remove it.
             containerset.image = containerset.image.replace(/^(docker.io\/)/, "");
         }
 
