@@ -171,7 +171,7 @@ class RemoveCadaversPlugin extends Plugin {
             const container = cadavers[i];
             try {
                 this._logger.debug("%s: Removing container %s.", this.getName(), container.Id);
-                helper.removeContainer(container.Id);
+                await this._scaler.removeContainer(container.Id);
                 this._logger.info("%s: Removed container %s.", this.getName(), container.Id);
             } catch (err) {
                 this._logger.error("%s: Couldn't remove container Error: %s", this.getName(), err);

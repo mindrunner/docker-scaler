@@ -131,6 +131,13 @@ class DockerScaler {
         }
     }
 
+    async removeContainer(id) {
+        let container = docker.getContainer(id); //@TODO Check null
+        await container.remove({});
+        return container;
+    }
+
+
     loadPlugin(plugin) {
         logger.info("%s: Loading %s plugin...", this._name, plugin.getName());
         plugin.init();

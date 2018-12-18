@@ -320,7 +320,7 @@ for (Node node in jenkinsNodes)
                     if (containerInfo.State.Running) {
                         await this.killContainer(container.Id);
                     }
-                    await helper.removeContainer(container.Id);
+                    await this._scaler.removeContainer(container.Id);
                     this._logger.debug("%s: Removed idle container %s.", this.getName(), container.Id)
                 } catch (err) {
                     this._logger.error("%s: %s", this.getName(), err);
