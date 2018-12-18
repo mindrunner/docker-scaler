@@ -295,7 +295,7 @@ for (Node node in jenkinsNodes)
 
 
                     let cankill = false;
-                    for (const c in this._scaler.config.containers) {
+                    for (const c in this._scaler.config.handleContainers) {
                         if (container.Labels["group-id"] === c) {
                             cankill = true;
                         }
@@ -360,7 +360,7 @@ for (Node node in jenkinsNodes)
                     const age = Math.floor(Date.now() / 1000) - container.Created;
 
                     let cankill = false;
-                    for (const c in this._scaler.config.containers) {
+                    for (const c in this._scaler.config.handleContainers) {
                         if (container.Labels["group-id"] === c) {
                             cankill = true;
                         }

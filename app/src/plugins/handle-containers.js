@@ -14,7 +14,7 @@ class HandleContainers extends Plugin {
         const handleContainers = this._scaler.config.handleContainers;
 
         for (const i in handleContainers.containers) {
-            const containerset = handleContainers.containers[i]; // = Object.assign(defaultConfig, this.config.containers[i]); // merge default config with the containerset
+            const containerset = handleContainers.containers[i]; // = Object.assign(defaultConfig, this.config.handleContainers[i]); // merge default config with the containerset
 
             this.timerCheckContainer(containerset);
             this._intervals.push(setInterval(function(){self.timerCheckContainer(containerset)}, handleContainers.checkInterval * 1000));

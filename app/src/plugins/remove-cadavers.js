@@ -150,8 +150,8 @@ class RemoveCadaversPlugin extends Plugin {
         let cadavers = [];
 
 
-        for (const i in this._scaler.config.containers) {
-            const id = this._scaler.config.containers[i].id;
+        for (const i in this._scaler.config.handleContainers) {
+            const id = this._scaler.config.handleContainers[i].id;
             let created = await this.getNonRunningByState('created', id);
             let exited = await this.getNonRunningByState('exited', id);
             let dead = await this.getNonRunningByState('dead', id);
