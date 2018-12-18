@@ -61,6 +61,9 @@ class DockerScaler {
      */
     init() {
         const self = this;
+
+
+        // Todo: Start Move this to handle-containers
         const handelContainers = this.config.handleContainers;
 
         //Read config file and update required infromations
@@ -72,6 +75,7 @@ class DockerScaler {
 
             containerset.id = i; // object key of containerset is the same as the id.
             //Im Artifactory database from what I have seen the cass is insensitive and it gives more freedom in the config file and avoid potential errors.
+            // Todo: Remove in phase 2
             containerset.image = containerset.image.toLocaleLowerCase();
 
             // add latest tag if no tag is there
@@ -85,6 +89,7 @@ class DockerScaler {
             // I suggest to keep the next line unless there is a good reason to remove it.
             containerset.image = containerset.image.replace(/^(docker.io\/)/, "");
         }
+        // Todo: END Move this to handle-containers
 
         //Load plugins
         const plugins = fs.readdirSync(path.resolve(__dirname, "plugins"));
@@ -103,6 +108,7 @@ class DockerScaler {
      * @param id
      * @returns {Promise}
      */
+    // Todo: Move to helper.js in phase 2
     async getNewestContainerByGroupId(id) {
         const listOpts = {
             all: true,
@@ -131,6 +137,7 @@ class DockerScaler {
         }
     }
 
+    // Todo: Move to helper.js in phase 2
     async removeContainer(id) {
         let container = docker.getContainer(id); //@TODO Check null
         await container.remove({});
@@ -160,6 +167,7 @@ class DockerScaler {
      * @param str String to trim
      * @returns {*} Trimmed string
      */
+    // Todo: Move to helper.js in phase 2
     static trim(str) {
         const regex = /[a-zA-Z0-9]/;
 
@@ -184,4 +192,5 @@ class DockerScaler {
     }
 }
 
+// Todo: Check if we can remove this in phase 2
 module.exports = DockerScaler;

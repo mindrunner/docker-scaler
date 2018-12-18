@@ -31,7 +31,7 @@ class HandleContainers extends Plugin {
 
     async createContainer(containerset) {
 
-        //TODO: Non-redundant defaults
+        //TODO: Non-redundant defaults -- phase 2
         const containersetConfig = {
             Image: containerset.image,
             name: containerset.name || containerset.id + "-" + HandleContainers.generateId(8),
