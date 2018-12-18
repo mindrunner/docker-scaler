@@ -1,5 +1,7 @@
-const Plugin = require('../plugin');
-const request = require('axios');
+const
+    Plugin = require('../plugin'),
+    helper = require('../helper'),
+    request = require('axios');
 
 class RemoveIdleJenkinsSlavesPlugin extends Plugin {
 
