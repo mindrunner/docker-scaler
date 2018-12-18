@@ -5,13 +5,12 @@ const
     path = require('path'),
     Plugin = require('./plugin'),
     logger = helper.Logger.getInstance(),
-    docker = helper.Docker.getInstance(),
-    interval = [];
+    docker = helper.Docker.getInstance();
 
 class DockerScaler {
 
     constructor(config) {
-        this.pluginName = "scaler";
+        this._name = "scaler";
 
         this.defaultConfig = {
             maxAge: 0, // Max age in seconds after a container should get killed, set 0 to disable
@@ -52,7 +51,7 @@ class DockerScaler {
 
 
         logger.level = this.config.logLevel;
-        logger.debug("%s: %s", this.pluginName, JSON.stringify(this.config));
+        logger.debug("%s: %s", this._name, JSON.stringify(this.config));
 
         cleanup.Cleanup(this, this.config);
     }
@@ -93,7 +92,7 @@ class DockerScaler {
             const PluginImpl = require("./plugins/" + plugins[i]);
             if (PluginImpl.prototype instanceof Plugin) {
                 const plugin = new PluginImpl(this);
-                logger.info("%s: Found new Plugin: %s",  this.pluginName, plugin.getName());
+                logger.info("%s: Found new Plugin: %s",  this._name, plugin.getName());
                 this.loadPlugin(plugin);
             }
         }
@@ -131,19 +130,19 @@ class DockerScaler {
             throw e;
         }
     }
-    
+
     loadPlugin(plugin) {
-        logger.info("%s: Loading %s plugin...", this.pluginName, plugin.getName());
+        logger.info("%s: Loading %s plugin...", this._name, plugin.getName());
         plugin.init();
         this.plugins.push(plugin);
     }
 
     unloadPlugin(plugin) {
-        logger.info("%s: Unloading %s plugin...", this.pluginName, plugin.getName());
+        logger.info("%s: Unloading %s plugin...", this._name, plugin.getName());
         try {
             plugin.deinit();
         } catch (e) {
-            logger.error("Deinitialization of Plugin %s failed", plugin.getName());
+            logger.error("%s: Deinitialization of Plugin %s failed", this._name ,  plugin.getName());
         }
     }
 
@@ -175,9 +174,6 @@ class DockerScaler {
             self.unloadPlugin(item)
         });
 
-        interval.forEach(function (item) {
-            clearInterval(item);
-        });
     }
 }
 
