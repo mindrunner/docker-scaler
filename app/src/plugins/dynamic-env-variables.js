@@ -40,7 +40,7 @@ class DynamicEnvVariablesPlugin extends Plugin {
             try {
 
                 let result = await dnsPromises.lookup(name);
-                this._logger.info("Got IP: " + result.address);
+                this._logger.debug("Got IP: " + result.address);
                 return result.address;
             } catch (e) {
                 throw e;

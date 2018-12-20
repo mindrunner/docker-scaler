@@ -7,7 +7,6 @@ class HandleContainers extends Plugin {
 
     constructor(scaler) {
         super("HandleContainers", scaler);
-
         this.defaultContainersetConfig = {
             pull: true,
             image: null,
@@ -26,6 +25,7 @@ class HandleContainers extends Plugin {
             ExtraHosts: []
         };
     }
+
     init() {
         super.init();
         const self = this;
@@ -51,7 +51,7 @@ class HandleContainers extends Plugin {
 
     async createContainer(containerset) {
 
-        //TODO: Non-redundant defaults -- phase 2
+        //Default data for a container
         const containersetConfig = {
             Image: containerset.image,
             name: containerset.name || containerset.id + "-" + HandleContainers.generateId(8),
@@ -188,13 +188,10 @@ class HandleContainers extends Plugin {
         const handelContainers = this._scaler.config.handleContainers;
         this._logger.info("%s: Updating data read from the config file.", this.getName()) ;
         for (const i in handelContainers.containers) {
-            const
-            //    defaultConfig = JSON.parse(JSON.stringify(this.defaultContainersetConfig)), // copy the variables, otherwise they are referenced
-                containerset = handelContainers.containers[i] = Object.assign(this.defaultContainersetConfig, handelContainers.containers[i]); // merge default config with the containerset
+            const containerset = handelContainers.containers[i] = Object.assign(this.defaultContainersetConfig, handelContainers.containers[i]); // merge default config with current container data.
 
             containerset.id = i; // object key of containerset is the same as the id.
-            //Im Artifactory database from what I have seen the cass is insensitive and it gives more freedom in the config file and avoid potential errors.
-            // Todo: Remove in phase 2
+            //Im Artifactory database, the cass muss be lowercase we could remove next line but it might cause additional execution issue.
             containerset.image = containerset.image.toLocaleLowerCase();
 
             // add latest tag if no tag is there
@@ -205,7 +202,7 @@ class HandleContainers extends Plugin {
             // make sure, the imagename does not contain the implicit docker.io registry host, so that we can later
             // search for both images (with and without host prefix) in getImageByRepoTag. This makes sure we support
             // old (1.10) and new (1.12) docker versions.
-            // I suggest to keep the next line unless there is a good reason to remove it.
+            // We keep the next line unless there is a good reason to remove it.
             containerset.image = containerset.image.replace(/^(docker.io\/)/, "");
         }
     }
@@ -223,6 +220,7 @@ class HandleContainers extends Plugin {
             await plugin.beforeCreate(this._scaler.config, containerset, containersetConfig);
         }
     }
+
     /**
      * Get all containers from a set.
      *

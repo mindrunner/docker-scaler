@@ -317,10 +317,11 @@ for (Node node in jenkinsNodes)
                     } catch (err) {
                         this._logger.error("%s: Container %s not registered in Jenkins", this.getName(), container.Id)
                     }
-                    if (containerInfo.State.Running) {
-                        await this.killContainer(container.Id);
-                    }
-                    await this._scaler.removeContainer(container.Id);
+                    //if (containerInfo.State.Running) {
+                    //    await helper.stopContainer(containerId)
+                    //}
+
+                    await helper.removeContainer(container.Id);
                     this._logger.debug("%s: Removed idle container %s.", this.getName(), container.Id)
                 } catch (err) {
                     this._logger.error("%s: %s", this.getName(), err);

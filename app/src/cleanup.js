@@ -6,9 +6,9 @@ const helper = require('./helper'),
 
 exports.Cleanup = function Cleanup(scaler, config) {
     logger.debug("Inititalizing Cleanup hooks");
+
     process.on('cleanup', function () {
         logger.info('%s: Cleaning up...', "cleanup");
-
 
         scaler.deinit();
 
@@ -29,7 +29,7 @@ exports.Cleanup = function Cleanup(scaler, config) {
                             'group-id=' + containerset.id]
                     }
                 };
-                docker.listContainers(listOpts, function (err, containers) {
+                docker.listContainers(listOpts, async function (err, containers) {
                     for (const i in containers) {
                         const container = containers[i];
                         helper.removeContainer(container.Id);

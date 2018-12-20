@@ -39,9 +39,7 @@ class DockerScaler {
         cleanup.Cleanup(this, this.config);
     }
 
-    /**
-     * Initializes the scaler and starts all services the first time
-     */
+    /// Initializes the scaler and starts all services the first time
     init() {
         const self = this;
 
@@ -55,49 +53,8 @@ class DockerScaler {
                 this.loadPlugin(plugin);
             }
         }
+
     }
-
-    /**
-     * Gets the newest running container by it's group id.
-     * @param id
-     * @returns {Promise}
-     */
-    // Todo: Move to helper.js in phase 2
-    async getNewestContainerByGroupId(id) {
-        const listOpts = {
-            all: true,
-            filters: {
-                label: ['auto-deployed=true',
-                    'group-id=' + id]
-            }
-        };
-
-        try {
-            let containers = await docker.listContainers(listOpts);
-
-            // Workaround for docker. They don't support filter by name.
-            let result = null;
-            for (const i in containers) {
-                const container = containers[i];
-                if (result === null) {
-                    result = container;
-                } else if (result.Created < container.Created) {
-                    result = container;
-                }
-            }
-            return result;
-        } catch (e) {
-            throw e;
-        }
-    }
-
-    // Todo: Move to helper.js in phase 2
-    async removeContainer(id) {
-        let container = docker.getContainer(id); //@TODO Check null
-        await container.remove({});
-        return container;
-    }
-
 
     loadPlugin(plugin) {
         logger.info("%s: Loading %s plugin...", this._name, plugin.getName());
@@ -114,37 +71,13 @@ class DockerScaler {
         }
     }
 
-    /**
-     * Special trim function that allows you to trim a string,
-     * that it only has numbers and chars at the beginning and end.
-     *
-     * @param str String to trim
-     * @returns {*} Trimmed string
-     */
-    // Todo: Move to helper.js in phase 2
-    static trim(str) {
-        const regex = /[a-zA-Z0-9]/;
-
-        while (!regex.test(str.charAt(0))) {
-            str = str.slice(1);
-
-        }
-
-        while (!regex.test(str.charAt(str.length - 1))) {
-            str = str.slice(0, -1);
-        }
-
-        return str;
-    }
-
     deinit() {
         const self = this;
         this.plugins.forEach(function (item) {
             self.unloadPlugin(item)
         });
-
     }
 }
 
-// Todo: Check if we can remove this in phase 2
+// required to expose the class on the other .js file (scaler.js).
 module.exports = DockerScaler;
