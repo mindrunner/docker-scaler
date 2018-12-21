@@ -295,7 +295,6 @@ for (Node node in jenkinsNodes)
                         continue;
                     }
 
-
                     let cankill = false;
                     for (const c in this._scaler.config.handleContainers.containers) {
                         if (container.Labels["group-id"] === c) {
@@ -308,18 +307,13 @@ for (Node node in jenkinsNodes)
                         continue;
                     }
 
-
                     this._logger.debug("%s: Idle container %s (%s) is running on removeIdleJenkinsSlaves host... Killing...", this.getName(), container.Id, idleNodeId);
-                    const containerInfo = await this.inspectContainer(container.Id);
 
                     try {
                         await this.removeIdleHostFromJenkins(idleNodeId);
                     } catch (err) {
                         this._logger.error("%s: Container %s not registered in Jenkins", this.getName(), container.Id)
                     }
-                    //if (containerInfo.State.Running) {
-                    //    await helper.stopContainer(containerId)
-                    //}
 
                     await helper.removeContainer(container.Id);
                     this._logger.debug("%s: Removed idle container %s.", this.getName(), container.Id)
@@ -389,11 +383,6 @@ for (Node node in jenkinsNodes)
         } catch (err) {
             this._logger.error("%s: %s", this.getName(), err);
         }
-    }
-
-    async inspectContainer(id) {
-        const container = this._docker.getContainer(id);
-        return await container.inspect({});
     }
 
 }
