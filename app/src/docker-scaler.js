@@ -14,7 +14,7 @@ class DockerScaler {
 
         this.defaultConfig = {
             maxAge: 0, // Max age in seconds after a container should get killed, set 0 to disable
-            pullInterval: 1800, // Interval between pulls in seconds.
+            //pullInterval: 1800, // Interval between pulls in seconds.
             ageCheckInterval: 30, // Interval in seconds to check if the age of the running instances
             slowKill: 1, // Amount of containers that get killed at once, if they are to old. Set 0 to disable.
             slowKillWait: 10, // Time in seconds to wait after slowKill, limit was reached. (should be shorter than ageCheckInterval)

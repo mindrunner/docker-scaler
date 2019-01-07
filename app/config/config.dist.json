@@ -1,5 +1,7 @@
 {
-  "pullInterval": 10,
+  "ImagePull" : {
+    "pullInterval": 10
+  },
   "handleContainers" : {
     "checkInterval": 30,
     "containers": {

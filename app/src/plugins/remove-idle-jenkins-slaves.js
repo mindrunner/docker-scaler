@@ -315,7 +315,7 @@ for (Node node in jenkinsNodes)
                         this._logger.error("%s: Container %s not registered in Jenkins", this.getName(), container.Id)
                     }
 
-                    await helper.removeContainer(container.Id);
+                    await helper.stopContainer(container.Id);
                     this._logger.debug("%s: Removed idle container %s.", this.getName(), container.Id)
                 } catch (err) {
                     this._logger.error("%s: %s", this.getName(), err);

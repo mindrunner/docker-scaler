@@ -7,7 +7,7 @@ class HandleContainers extends Plugin {
 
     constructor(scaler) {
         super("HandleContainers", scaler);
-        this.defaultContainersetConfig = {
+        this._defaultContainersetConfig = {
             pull: true,
             image: null,
             instances: 0,
@@ -188,7 +188,7 @@ class HandleContainers extends Plugin {
         const handelContainers = this._scaler.config.handleContainers;
         this._logger.info("%s: Updating data read from the config file.", this.getName()) ;
         for (const i in handelContainers.containers) {
-            const containerset = handelContainers.containers[i] = Object.assign(this.defaultContainersetConfig, handelContainers.containers[i]); // merge default config with current container data.
+            const containerset = handelContainers.containers[i] = Object.assign(this._defaultContainersetConfig, handelContainers.containers[i]); // merge default config with current container data.
 
             containerset.id = i; // object key of containerset is the same as the id.
             //Im Artifactory database, the cass muss be lowercase we could remove next line but it might cause additional execution issue.

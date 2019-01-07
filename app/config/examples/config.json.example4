@@ -1,30 +1,34 @@
 {
-  "scaleInterval": 10,
-  "pullInterval": 60,
-  "containers": {
-    "http1": {
-      "image": "docker.io/httpd:latest",
-      "instances": 1,
-      "pull": true,
-      "Memory": 4000000000,
-      "MemorySwap": -1,
-      "CpuPercent": 100,
-      "Ulimits": [
-        {
-          "Name": "fsize",
-          "Hard": 2000000000,
-          "Soft": 2000000000
-        }
-      ],
-      "env": [
-        "master=https://ci.sbb.ch/",
-        "executors=1",
-        "slavename={{HOST_NAME}}-{{IP}}-{{CONTAINER_NAME}}",
-        "externalport={{RANDOM_PORT}}",
-        "host={{IP}}",
-        "labels=legacy {{IP}} {{PLATFORM}} {{PLATFORM}}",
-        "swarmopts=-disableClientsUniqueId -disableSslVerification"
-      ]
+  "ImagePull" : {
+    "pullInterval": 60
+  },
+  "handleContainers" : {
+    "scaleInterval": 10,
+    "containers": {
+      "http1": {
+        "image": "docker.io/httpd:latest",
+        "instances": 1,
+        "pull": true,
+        "Memory": 4000000000,
+        "MemorySwap": -1,
+        "CpuPercent": 100,
+        "Ulimits": [
+          {
+            "Name": "fsize",
+            "Hard": 2000000000,
+            "Soft": 2000000000
+          }
+        ],
+        "env": [
+          "master=https://ci.sbb.ch/",
+          "executors=1",
+          "slavename={{HOST_NAME}}-{{IP}}-{{CONTAINER_NAME}}",
+          "externalport={{RANDOM_PORT}}",
+          "host={{IP}}",
+          "labels=legacy {{IP}} {{PLATFORM}} {{PLATFORM}}",
+          "swarmopts=-disableClientsUniqueId -disableSslVerification"
+        ]
+      }
     }
   },
   "removeIdleJenkinsSlaves": {

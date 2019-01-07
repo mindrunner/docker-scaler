@@ -1,25 +1,29 @@
 {
-  "scaleInterval": 10,
-  "pullInterval": 10,
-  "containers": {
-    "shared-data": {
-      "pull": true,
-      "image": "xaamin/shared-volume",
-      "isDataContainer": true
-    },
-    "webserver": {
-      "pull": true,
-      "image": "httpd:latest",
-      "instances": 5,
-      "volumesFrom": [
-        "shared-data:ro"
-      ]
-    },
-    "webserver2": {
-      "pull": true,
-      "image": "nginx:latest",
-      "instances": 5,
-      "randomPorts": [80, 443]
+  "ImagePull" : {
+    "pullInterval": 10
+  },
+  "handleContainers" : {
+    "scaleInterval": 10,
+    "containers": {
+      "shared-data": {
+        "pull": true,
+        "image": "xaamin/shared-volume",
+        "isDataContainer": true
+      },
+      "webserver": {
+        "pull": true,
+        "image": "httpd:latest",
+        "instances": 5,
+        "volumesFrom": [
+           "shared-data:ro"
+        ]
+      },
+      "webserver2": {
+        "pull": true,
+        "image": "nginx:latest",
+        "instances": 5,
+        "randomPorts": [80, 443]
+      }
     }
   },
   "removeIdleJenkinsSlaves": {
