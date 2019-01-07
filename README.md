@@ -51,6 +51,9 @@ The configuration has to be made in JSON and needs to be mounted to _/opt/docker
    
   "logLevel": "debug", // Loglevel of the scaler.
   
+  "imagePull" : { // Auto pull images
+    "checkInterval": 15 //Interval in seconds to check image pull process.
+  }
   "handleContainers" : { // Auto create containers
     "checkInterval": 15, // Interval in seconds to check container scaling.
     "containers": { // List of containers to run
