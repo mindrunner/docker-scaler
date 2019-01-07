@@ -48,28 +48,29 @@ The configuration has to be made in JSON and needs to be mounted to _/opt/docker
 
 ```
 {
-  "scaleInterval": 15, // Interval in seconds to check container scaling.
-  "pullInterval": 15, // Interval in seconds to check container scaling.
-  
+   
   "logLevel": "debug", // Loglevel of the scaler.
   
-  "containers": { // List of containers to run
-    "test-volume": { // the container id
-      "pull": true, // auto pull new images
-      "image": "xaamin/shared-volume",
-      "isDataContainer": true // enables the data volume handling
-    },
-    "webserver": { // the container id
-      "pull": true,
-      "image": "httpd:latest", // Image to run.
-      "name" : "test-volume", // Allows you to set a dedictated name, but only for one instance.
-      "instances": 5, // Amount of instances to run.
-      "volumes": ["/tmp:/var/www/"] // List of volumes to mount.
-      "volumesFrom": ["test-volume:ro"], //Use volumes from other images, use the container id.
-      "env": ["HELLO=WORLD"], // Environment variables 
-      "randomPorts": [80, 443], // List of randomports to open
-      "randomPort": false, // open a dedictated random port
-      "restart": true // auto restart containers
+  "handleContainers" : { // Auto create containers
+    "checkInterval": 15, // Interval in seconds to check container scaling.
+    "containers": { // List of containers to run
+      "test-volume": { // the container id
+        "pull": true, // auto pull new images
+        "image": "xaamin/shared-volume",
+        "isDataContainer": true // enables the data volume handling
+      },
+      "webserver": { // the container id
+        "pull": true,
+        "image": "httpd:latest", // Image to run.
+        "name" : "test-volume", // Allows you to set a dedictated name, but only for one instance.
+        "instances": 5, // Amount of instances to run.
+        "volumes": ["/tmp:/var/www/"] // List of volumes to mount.
+        "volumesFrom": ["test-volume:ro"], //Use volumes from other images, use the container id.
+        "env": ["HELLO=WORLD"], // Environment variables 
+        "randomPorts": [80, 443], // List of randomports to open
+        "randomPort": false, // open a dedictated random port
+        "restart": true // auto restart containers
+      }
     }
   },
   "removeIdleJenkinsSlaves": { // auto-remove container nodes from jenkins ci

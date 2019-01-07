@@ -1,9 +1,9 @@
 {
-  "ImagePull" : {
-    "pullInterval": 10
+  "imagePull" : {
+    "checkInterval": 10
   },
   "handleContainers" : {
-    "scaleInterval": 10,
+    "checkInterval": 10,
     "containers": {
       "shared-data": {
         "pull": true,

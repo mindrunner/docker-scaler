@@ -1,6 +1,6 @@
 {
     "handleContainers" : {
-      "scaleInterval": 3,
+      "checkInterval": 3,
       "containers": {
         "android-ng-i-local-test": {
           "image": "schweizerischebundesbahnen/wzu-jenkins-slave-java:latest-dev",

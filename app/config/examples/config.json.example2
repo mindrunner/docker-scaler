@@ -1,6 +1,6 @@
 {
   "handleContainers" : {
-    "scaleInterval": 3,
+    "checkInterval": 3,
     "containers": {
       "http1": {
         "image": "httpd:latest",

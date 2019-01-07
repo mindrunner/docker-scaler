@@ -10,9 +10,9 @@ class ImagePullPlugin extends Plugin {
     constructor(scaler) {
         super("ImagePullPlugin", scaler);
         this._defaultImagePullConfig = {
-            "pullInterval": 10
+            "checkInterval": 10 // Interval between pulls in seconds.
         };
-        this._scaler.config.ImagePull = Object.assign(this._defaultImagePullConfig, this._scaler.config.ImagePull);
+        this._scaler.config.imagePull = Object.assign(this._defaultImagePullConfig, this._scaler.config.imagePull);
     }
 
     init() {
@@ -25,7 +25,7 @@ class ImagePullPlugin extends Plugin {
                 self.pullContainerset(containerset);
                 this._intervals.push(setInterval(function () {
                     self.pullContainerset(containerset);
-                }, self._scaler.config.ImagePull.pullInterval * 1000));
+                }, self._scaler.config.imagePull.checkInterval * 1000));
             } else {
                 this._logger.info("%s: Pulling disabled for %s", this.getName(), containerset.name);
             }

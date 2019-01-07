@@ -1,9 +1,9 @@
 {
-  "ImagePull" : {
-    "pullInterval": 60
+  "imagePull" : {
+    "checkInterval": 60
   },
   "handleContainers" : {
-    "scaleInterval": 10,
+    "checkInterval": 10,
     "containers": {
       "http1": {
         "image": "docker.io/httpd:latest",
