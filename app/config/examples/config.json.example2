@@ -1,5 +1,5 @@
 {
-  "handleContainers" : {
+  "handleContainers": {
     "checkInterval": 3,
     "containers": {
       "http1": {
