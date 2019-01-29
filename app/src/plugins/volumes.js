@@ -30,7 +30,7 @@ class VolumesPlugin extends Plugin {
 
             fsMode = volumesFrom[1] || "rw";
 
-            const sourceContainer = await this._scaler.getNewestContainerByGroupId(groupId);
+            const sourceContainer = await helper.getNewestContainerByGroupId(groupId);
             if (sourceContainer == null) {
                 throw new hookException("Didn't find data container " + groupId);
             }

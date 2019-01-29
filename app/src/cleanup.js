@@ -6,19 +6,20 @@ const helper = require('./helper'),
 
 exports.Cleanup = function Cleanup(scaler, config) {
     logger.debug("Inititalizing Cleanup hooks");
+
     process.on('cleanup', function () {
         logger.info('%s: Cleaning up...', "cleanup");
-
 
         scaler.deinit();
 
         logger.info('%s: Waiting all processes to finish...', "cleanup");
 
         if ((process.env.CLEANUP && process.env.CLEANUP === "true") || config.cleanup === true) {
-            logger.info("Stopping running containers...");
+            const handleContainers =  config.handleContainers;
+            logger.info("Stopping running containers...", );
 
-            for (const i in config.containers) {
-                const containerset = config.containers[i];
+            for (const i in handleContainers.containers) {
+                const containerset = handleContainers.containers[i];
 
                 logger.info("Stopping containers with id %s", containerset.id);
                 const listOpts = {
@@ -28,7 +29,7 @@ exports.Cleanup = function Cleanup(scaler, config) {
                             'group-id=' + containerset.id]
                     }
                 };
-                docker.listContainers(listOpts, function (err, containers) {
+                docker.listContainers(listOpts, async function (err, containers) {
                     for (const i in containers) {
                         const container = containers[i];
                         helper.removeContainer(container.Id);

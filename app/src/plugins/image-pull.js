@@ -9,17 +9,23 @@ class ImagePullPlugin extends Plugin {
      */
     constructor(scaler) {
         super("ImagePullPlugin", scaler);
+        this._defaultImagePullConfig = {
+            "checkInterval": 10 // Interval between pulls in seconds.
+        };
+        this._scaler.config.imagePull = Object.assign(this._defaultImagePullConfig, this._scaler.config.imagePull);
     }
 
     init() {
+        super.init();
         const self = this;
-        for (const i in this._scaler.config.containers) {
-            const containerset = self._scaler.config.containers[i];
+        const handleContainers = this._scaler.config.handleContainers;
+        for (const i in handleContainers.containers) {
+            const containerset = handleContainers.containers[i];
             if (containerset.pull) {
                 self.pullContainerset(containerset);
                 this._intervals.push(setInterval(function () {
                     self.pullContainerset(containerset);
-                }, self._scaler.config.pullInterval * 1000));
+                }, self._scaler.config.imagePull.checkInterval * 1000));
             } else {
                 this._logger.info("%s: Pulling disabled for %s", this.getName(), containerset.name);
             }
@@ -32,7 +38,6 @@ class ImagePullPlugin extends Plugin {
      * @param containerset
      */
     async pullContainerset(containerset) {
-        const self = this;
         try {
             await this.pullImage(containerset.image);
             this._logger.info("%s: Successfully pulled %s.", this.getName(), containerset.image);
@@ -48,16 +53,14 @@ class ImagePullPlugin extends Plugin {
      * @returns {Promise}
      */
     async pullImage(image) {
-        const self = this;
-
         const pullOpts = {};
 
         // this._logger.debug(util.inspect(image, {showHidden: false, depth: null}))
         // this._logger.debug(util.inspect(self._scaler.config.auth, {showHidden: false, depth: null}))
 
         try {
-            if (self._scaler.config.auth !== {}) {
-                pullOpts.authconfig = self._scaler.config.auth;
+            if (this._scaler.config.auth !== {}) {
+                pullOpts.authconfig = this._scaler.config.auth;
                 this._logger.info("%s: Pulling image: %s as %s user", this.getName(), image, pullOpts.authconfig.username);
             } else {
                 this._logger.info("%s: Pulling image: %s as anonymous user", this.getName(), image);
