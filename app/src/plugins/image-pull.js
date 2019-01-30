@@ -10,7 +10,7 @@ class ImagePullPlugin extends Plugin {
     constructor(scaler) {
         super("ImagePullPlugin", scaler);
         this._defaultImagePullConfig = {
-            "checkInterval": 10 // Interval between pulls in seconds.
+            "checkInterval": 1800 // Interval between pulls in seconds.
         };
         this._scaler.config.imagePull = Object.assign(this._defaultImagePullConfig, this._scaler.config.imagePull);
     }

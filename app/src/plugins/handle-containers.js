@@ -101,7 +101,9 @@ class HandleContainers extends Plugin {
     async spawnWorkerContainer(containerset) {
 
         try {
+
             let runningContainers = await this.getContainerByGroupId(containerset.id);
+            this._logger.info("%s: Number of instance that are running : %s and how much we need to have %s", this.getName(), runningContainers, containerset.instances);
             if (runningContainers.length < containerset.instances) {
                 const neededContainers = containerset.instances - runningContainers.length;
 
