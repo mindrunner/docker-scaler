@@ -185,10 +185,10 @@ class HandleContainers extends Plugin {
     }
 
     UpdateConfigData() {
-        const handelContainers = this._scaler.config.handleContainers;
+        const handleContainers = this._scaler.config.handleContainers;
         this._logger.info("%s: Updating data read from the config file.", this.getName()) ;
-        for (const i in handelContainers.containers) {
-            const containerset = handelContainers.containers[i] = Object.assign(this._defaultContainersetConfig, handelContainers.containers[i]); // merge default config with current container data.
+        for (const i in handleContainers.containers) {
+            const containerset = Object.assign(this._defaultContainersetConfig, handleContainers.containers[i]); // merge default config with current container data.
 
             containerset.id = i; // object key of containerset is the same as the id.
             //Im Artifactory database, the cass muss be lowercase we could remove next line but it might cause additional execution issue.
@@ -204,6 +204,7 @@ class HandleContainers extends Plugin {
             // old (1.10) and new (1.12) docker versions.
             // We keep the next line unless there is a good reason to remove it.
             containerset.image = containerset.image.replace(/^(docker.io\/)/, "");
+            handleContainers.containers[i] = Object.assign( {}, containerset);
         }
     }
 
