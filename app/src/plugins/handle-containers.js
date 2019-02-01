@@ -34,7 +34,6 @@ class HandleContainers extends Plugin {
         this.UpdateConfigData();
 
         for (const i in handleContainers.containers) {
-            this._logger.info("%s: Loop containers [i] : In I=%s we have : %s", this.getName(), i, handleContainers.containers[i].name);
             const containerset = handleContainers.containers[i]; // = Object.assign(defaultConfig, this.config.handleContainers[i]); // merge default config with the containerset
 
             this.timerCheckContainer(containerset);
@@ -102,9 +101,7 @@ class HandleContainers extends Plugin {
     async spawnWorkerContainer(containerset) {
 
         try {
-
             let runningContainers = await this.getContainerByGroupId(containerset.id);
-            this._logger.info("%s: Number of instance that are running : %s and we need to have %s", this.getName(), runningContainers.length, containerset.instances);
             if (runningContainers.length < containerset.instances) {
                 const neededContainers = containerset.instances - runningContainers.length;
 
