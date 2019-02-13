@@ -1,8 +1,10 @@
 'use strict';
 
-const fs = require('fs'),
+const
+    fs = require('fs'),
     Docker = require('dockerode'),
-    winston = require('winston');
+    winston = require('winston'),
+    _name = "helper";
 
 exports.Logger = (function () {
     let instance;
@@ -51,7 +53,7 @@ exports.Docker = (function () {
         }else
         {
             console.log("Connecting to TCP Dockerdaemon at: "+process.env.DOCKERHOST+":"+process.env.DOCKERPORT);
-            return new Docker({host: process.env.DOCKERHOST, port: process.env.DOCKERPORT})
+            return new Docker({ host: process.env.DOCKERHOST, port: process.env.DOCKERPORT  })
         }
     }
 
@@ -65,23 +67,78 @@ exports.Docker = (function () {
     };
 })();
 
-exports.removeContainer = function (containerId) {
-    const docker = exports.Docker.getInstance(),
+exports.removeContainer = async function (containerId) {
+    const
+        docker = exports.Docker.getInstance(),
         logger = exports.Logger.getInstance(),
         container = docker.getContainer(containerId);
 
-    container.stop(function (err, data) {
-        if (err) {
-            logger.error("%s: Error stopping %s. Maybe it's not running.", "helper", containerId);
-        } else {
-            logger.info("%s: Stopped container %s.", "helper", containerId);
-        }
+    try {
+        var err;
 
-        container.remove(function (err, data) {
-            if (err) {
-                logger.error("%s: Error removing %s.", "helper", containerId);
-            }
-            logger.info("%s: Removed container %s.", "helper", containerId);
-        });
-    });
+        const containerInfo = await container.inspect({});
+        if (containerInfo.State.Running)
+            await exports.stopContainer(containerId);
+        await container.remove(err);
+        if (err) {
+            logger.error("%s: Error removing %s.", _name, containerId);
+        } else {
+            logger.info("%s: Removed container %s.", _name, containerId);
+        }
+    } catch (e) {
+        throw e;
+    }
 };
+
+exports.stopContainer = async function (containerId) {
+    const
+        docker = exports.Docker.getInstance(),
+        logger = exports.Logger.getInstance(),
+        container = docker.getContainer(containerId);
+
+    try {
+        var err;
+        await container.stop(err);
+        if (err) {
+            logger.error("%s: Error stopping %s. Maybe it's not running.", _name, containerId);
+        } else {
+            logger.info("%s: Stopped container %s.", _name, containerId);
+        }
+    } catch (e) {
+        throw e;
+    }
+};
+
+/**
+ * Gets the newest running container by it's group id.
+ * @param id
+ * @returns {Promise}
+ **/
+exports.getNewestContaierByGroupID = async function(id) {
+    const listOpts = {
+        all: true,
+        filters: {
+            label: ['auto-deployed=true',
+                'group-id=' + id]
+        }
+    };
+    const docker = exports.Docker.getInstance();
+
+    try {
+        let containers = await docker.listContainers(listOpts);
+
+        // Workaround for docker. They don't support filter by name.
+        let result = null;
+        for (const i in containers) {
+            const container = containers[i];
+            if (result === null) {
+                result = container;
+            } else if (result.Created < container.Created) {
+                result = container;
+            }
+        }
+        return result;
+    } catch (e) {
+        throw e;
+    }
+}

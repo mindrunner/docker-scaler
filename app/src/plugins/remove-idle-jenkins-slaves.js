@@ -1,5 +1,7 @@
-const Plugin = require('../plugin');
-const request = require('axios');
+const
+    Plugin = require('../plugin'),
+    helper = require('../helper'),
+    request = require('axios');
 
 class RemoveIdleJenkinsSlavesPlugin extends Plugin {
 
@@ -293,9 +295,8 @@ for (Node node in jenkinsNodes)
                         continue;
                     }
 
-
                     let cankill = false;
-                    for (const c in this._scaler.config.containers) {
+                    for (const c in this._scaler.config.handleContainers.containers) {
                         if (container.Labels["group-id"] === c) {
                             cankill = true;
                         }
@@ -306,19 +307,15 @@ for (Node node in jenkinsNodes)
                         continue;
                     }
 
-
                     this._logger.debug("%s: Idle container %s (%s) is running on removeIdleJenkinsSlaves host... Killing...", this.getName(), container.Id, idleNodeId);
-                    const containerInfo = await this._scaler.inspectContainer(container.Id);
 
                     try {
                         await this.removeIdleHostFromJenkins(idleNodeId);
                     } catch (err) {
                         this._logger.error("%s: Container %s not registered in Jenkins", this.getName(), container.Id)
                     }
-                    if (containerInfo.State.Running) {
-                        await this._scaler.killContainer(container.Id);
-                    }
-                    await this._scaler.removeContainer(container.Id);
+
+                    await helper.stopContainer(container.Id);
                     this._logger.debug("%s: Removed idle container %s.", this.getName(), container.Id)
                 } catch (err) {
                     this._logger.error("%s: %s", this.getName(), err);
@@ -328,6 +325,17 @@ for (Node node in jenkinsNodes)
             this._logger.error("%s: %s", this.getName(), err);
         }
     };
+
+    async killContainer(id) {
+        const container = this._docker.getContainer(id);
+        try {
+            await container.kill({});
+        } catch (e) {
+            if (e.statusCode !== 304) {
+                throw e;
+            }
+        }
+    }
 
     async checkAge() {
         this._logger.debug("%s: Checking slaves states...", this.getName());
@@ -349,7 +357,7 @@ for (Node node in jenkinsNodes)
                     const age = Math.floor(Date.now() / 1000) - container.Created;
 
                     let cankill = false;
-                    for (const c in this._scaler.config.containers) {
+                    for (const c in this._scaler.config.handleContainers.containers) {
                         if (container.Labels["group-id"] === c) {
                             cankill = true;
                         }
@@ -375,7 +383,8 @@ for (Node node in jenkinsNodes)
         } catch (err) {
             this._logger.error("%s: %s", this.getName(), err);
         }
-    };
+    }
+
 }
 
 

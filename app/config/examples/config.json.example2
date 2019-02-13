@@ -1,11 +1,12 @@
 {
-  "scaleInterval": 3,
-  "containers": {
-    "http1": {
-      "image": "httpd:latest",
-      "instances": 1,
-      "pull": true
-    }
+  "handleContainers": {
+    "checkInterval": 3,
+    "containers": {
+      "http1": {
+        "image": "httpd:latest",
+        "instances": 1,
+        "pull": true
+      }
   },
   "removeIdleJenkinsSlaves": {
     "enabled": false,
