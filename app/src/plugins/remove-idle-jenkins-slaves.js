@@ -127,6 +127,7 @@ for (Node node in jenkinsNodes)
         if(nodeId == "${nodeId}") {
             node.getComputer().doDoDelete()
             println "true"
+            return
         }
     }
 }`;
@@ -196,6 +197,7 @@ for (Node node in jenkinsNodes)
             let response = await this._postRequest(this._scriptUrl, {
                 data: "script=" + this.removeIdleHostFromJenkinsScript(nodeId)
             });
+            this._logger.debug("Got this Response from Jenkins: %s", response.data);
             return response.data;
         } catch (e) {
             this._logger.error("Cannot remove. %s", e);
@@ -310,6 +312,7 @@ for (Node node in jenkinsNodes)
                     this._logger.debug("%s: Idle container %s (%s) is running on removeIdleJenkinsSlaves host... Killing...", this.getName(), container.Id, idleNodeId);
 
                     try {
+                        this._logger.debug("Running removeIdleHostFromJenkins")
                         await this.removeIdleHostFromJenkins(idleNodeId);
                     } catch (err) {
                         this._logger.error("%s: Container %s not registered in Jenkins", this.getName(), container.Id)
