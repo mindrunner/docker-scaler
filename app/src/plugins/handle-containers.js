@@ -129,13 +129,13 @@ class HandleContainers extends Plugin {
     async spawnDataContainer(containerset) {
 
         try {
-            let existingContainers = await this._scaler.getContainerByGroupId(containerset.id, true);
+            let existingContainers = await this.getContainerByGroupId(containerset.id, true);
             this._logger.debug("%s: getContainerByGroupId", this.getName());
             let hasNewestImage = false;
 
             try {
                 this._logger.debug("%s: looking for newest image:", this.getName(), containerset.image);
-                const newestImage = await this._scaler.getImageByRepoTag(containerset.image);
+                const newestImage = await this.getImageByRepoTag(containerset.image);
                 if (newestImage == null) {
                     this._logger.debug("%s: no image found for: %s", this.getName(), containerset.image);
                 } else {
