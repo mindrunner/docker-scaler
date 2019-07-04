@@ -373,5 +373,4 @@ for (Node node in jenkinsNodes)
 
 }
 
-
 module.exports = RemoveIdleJenkinsSlavesPlugin;
