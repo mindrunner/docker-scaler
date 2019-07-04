@@ -165,10 +165,10 @@ for (Node node in jenkinsNodes)
 
     async getPostResults(scriptData) {
         try {
-            var _data = "Data:" + scriptData;
+
             return await axios.post(
                 this._scriptUrl,
-                _data ,
+                scriptData ,
                 axios.defaults.headers
             );
         }
