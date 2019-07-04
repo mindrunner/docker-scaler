@@ -31,7 +31,7 @@ class RemoveIdleJenkinsSlavesPlugin extends Plugin {
         }
 
         axios.defaults.headers['auth'] = this._authentication.auth;
-        axios.defaults.headers['Content-Type'] = "application/json"
+
         const self = this;
 
         if (self._scaler.config.removeIdleJenkinsSlaves.enabled) {
