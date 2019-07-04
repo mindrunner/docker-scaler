@@ -173,7 +173,7 @@ for (Node node in jenkinsNodes)
             );
         }
         catch (e) {
-            throw e
+            throw e;
         }
     };
 
@@ -212,9 +212,8 @@ for (Node node in jenkinsNodes)
                 }
             }
             return serverList;
-
         } catch (e) {
-            throw e
+            throw e;
         }
     };
 
