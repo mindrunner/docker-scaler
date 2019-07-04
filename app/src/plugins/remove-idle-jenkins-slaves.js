@@ -1,7 +1,7 @@
 const
     Plugin = require('../plugin'),
     helper = require('../helper'),
-    request = require('axios');
+    axios = require('axios');
 
 class RemoveIdleJenkinsSlavesPlugin extends Plugin {
 
@@ -23,26 +23,22 @@ class RemoveIdleJenkinsSlavesPlugin extends Plugin {
 
         this._scriptUrl = this._scaler.config.removeIdleJenkinsSlaves.jenkinsMaster + "/scriptText";
 
-        this._postRequest = request.create({
-                method: 'POST',
-                auth: {
-                    username: this._scaler.config.removeIdleJenkinsSlaves.username,
-                    password: this._scaler.config.removeIdleJenkinsSlaves.password
-                },
-                // proxy: {
-                //     host: '127.0.0.1',
-                //     port: 8888,
-                // },
+        this._authentication =  {
+            auth : {
+                username: this._scaler.config.removeIdleJenkinsSlaves.username,
+                password: this._scaler.config.removeIdleJenkinsSlaves.password
             }
-        );
+        }
 
+        axios.defaults.headers['auth'] = this._authentication.auth;
+        axios.defaults.headers['Content-Type'] = "application/json"
         const self = this;
+
         if (self._scaler.config.removeIdleJenkinsSlaves.enabled) {
             this._intervals.push(setInterval(function () {
                 self.checkSlaves();
             }, this._scaler.config.removeIdleJenkinsSlaves.checkInterval * 1000));
         }
-
 
     }
 
@@ -51,7 +47,7 @@ class RemoveIdleJenkinsSlavesPlugin extends Plugin {
             let c = await this.getCrumb();
             let crumbField = c.data.split(":")[0];
             let crumb = c.data.split(":")[1];
-            this._postRequest.defaults.headers[crumbField] = crumb;
+            axios.defaults.headers[crumbField] = crumb;
         } catch (ex) {
             this._logger.warn("Jenkins does not support CSRF Header, consider activating the CSRF protection");
         }
@@ -59,7 +55,6 @@ class RemoveIdleJenkinsSlavesPlugin extends Plugin {
         await this.checkAge();
         await this.checkIdles();
     };
-
 
     getIdleSlavesJenkinsScript() {
         return `import hudson.FilePath
@@ -162,30 +157,29 @@ for (Node node in jenkinsNodes)
     async getCrumb() {
         const crumbUrl = this._scaler.config.removeIdleJenkinsSlaves.jenkinsMaster + `/crumbIssuer/api/xml?xpath=concat(//crumbRequestField,":",//crumb)`;
         try {
-            let response = await request.get(crumbUrl,
-                {
-                    method: 'GET',
-                    auth: {
-                        username: this._scaler.config.removeIdleJenkinsSlaves.username,
-                        password: this._scaler.config.removeIdleJenkinsSlaves.password
-                    },
-                    // proxy: {
-                    //     host: '127.0.0.1',
-                    //     port: 8888,
-                    // },
-                }
-            );
-            return response;
+            return await axios.get(crumbUrl, this._authentication);
         } catch (e) {
+            throw e
+        }
+    };
+
+    async getPostResults(scriptData) {
+        try {
+            var _data = "Data:" + scriptData;
+            return await axios.post(
+                this._scriptUrl,
+                _data ,
+                axios.defaults.headers
+            );
+        }
+        catch (e) {
             throw e
         }
     };
 
     async setOldNodeOffline(nodeId) {
         try {
-            return await this._postRequest(this._scriptUrl, {
-                data: "script=" + this.setOldNodeOfflineJenkinsScript(nodeId)
-            });
+            return await this.getPostResults("script=" + this.setOldNodeOfflineJenkinsScript(nodeId));
         } catch (e) {
             throw e;
         }
@@ -193,9 +187,7 @@ for (Node node in jenkinsNodes)
 
     async removeIdleHostFromJenkins(nodeId) {
         try {
-            let response = await this._postRequest(this._scriptUrl, {
-                data: "script=" + this.removeIdleHostFromJenkinsScript(nodeId)
-            });
+            let response = await this.getPostResults("script=" + this.removeIdleHostFromJenkinsScript(nodeId));
             return response.data;
         } catch (e) {
             this._logger.error("Cannot remove. %s", e);
@@ -204,9 +196,7 @@ for (Node node in jenkinsNodes)
 
     async getNodes() {
         try {
-            let response = await this._postRequest(this._scriptUrl, {
-                data: "script=" + this.getAllNodesJenkinsScript()
-            });
+            var response = await this.getPostResults("script=" + this.getAllNodesJenkinsScript());
             const serverList = response.data.trim().split("\n");
             if (serverList.length === 0) {
                 throw "Didn't get any server from API";
@@ -222,18 +212,15 @@ for (Node node in jenkinsNodes)
                 }
             }
             return serverList;
+
         } catch (e) {
-            throw e;
+            throw e
         }
-
-
     };
 
     async getIdles() {
         try {
-            let response = await this._postRequest(this._scriptUrl, {
-                data: "script=" + this.getIdleSlavesJenkinsScript()
-            });
+            let response = await this.getPostResults("script=" + this.getIdleSlavesJenkinsScript());
             const serverList = response.data.trim().split("\n");
             if (serverList.length === 0) {
                 throw "Didn't get any server from API";
