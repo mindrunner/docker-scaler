@@ -9,7 +9,7 @@
   "author": "Lukas Elsner <lukas.elsner@sbb.ch>",
   "license": "ISC",
   "dependencies": {
-    "axios": "^0.18.0",
+    "axios": "^0.19.0",
     "dockerode": "^2.5.7",
     "winston": "~3.1.0"
   }
